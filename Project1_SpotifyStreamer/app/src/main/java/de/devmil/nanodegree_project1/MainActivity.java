@@ -20,8 +20,9 @@ import com.squareup.picasso.Picasso;
 import java.util.List;
 
 import de.devmil.nanodegree_project1.model.SpotifyArtistResult;
-import de.devmil.nanodegree_project1.model.SpotifyArtistSearch;
-import de.devmil.nanodegree_project1.model.SpotifyArtistSearchListener;
+import de.devmil.nanodegree_project1.model.SpotifyArtistSearchResult;
+import de.devmil.nanodegree_project1.processing.SpotifyArtistSearch;
+import de.devmil.nanodegree_project1.processing.SpotifyArtistSearchListener;
 import kaaes.spotify.webapi.android.SpotifyApi;
 
 public class MainActivity extends AppCompatActivity {
@@ -46,9 +47,9 @@ public class MainActivity extends AppCompatActivity {
         artistSearch = new SpotifyArtistSearch(new SpotifyApi());
         artistSearch.addListener(new SpotifyArtistSearchListener() {
             @Override
-            public void onNewResult(List<SpotifyArtistResult> result) {
+            public void onNewResult(SpotifyArtistSearchResult result) {
                 resultAdapter.setCurrentResult(result);
-                setResultAvailable(result.size() > 0);
+                setResultAvailable(result.getArtists().size() > 0);
             }
         });
 
@@ -99,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
             TextView txtName;
         }
 
-        private List<SpotifyArtistResult> currentResult;
+        private SpotifyArtistSearchResult currentResult;
         private Context context;
         private LayoutInflater inflater;
 
@@ -111,16 +112,18 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public int getCount() {
-            return currentResult == null ? 0 : currentResult.size();
+            return (currentResult == null || currentResult.getArtists() == null) ? 0 : currentResult.getArtists().size();
         }
 
         @Override
         public Object getItem(int position) {
             if(currentResult == null)
                 return null;
-            if(currentResult.size() <= position)
+            if(currentResult.getArtists() == null)
                 return null;
-            return currentResult.get(position);
+            if(currentResult.getArtists().size() <= position)
+                return null;
+            return currentResult.getArtists().get(position);
         }
 
         @Override
@@ -170,7 +173,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        public void setCurrentResult(List<SpotifyArtistResult> currentResult) {
+        public void setCurrentResult(SpotifyArtistSearchResult currentResult) {
             this.currentResult = currentResult;
             runOnUiThread(new Runnable() {
                 @Override
