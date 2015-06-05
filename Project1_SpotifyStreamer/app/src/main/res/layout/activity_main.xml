@@ -16,7 +16,7 @@
         android:layout_alignParentBottom="true"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:visibility="gone">
+        android:alpha="0">
 
     </ListView>
     <LinearLayout
@@ -25,10 +25,26 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:gravity="center">
+        android:layout_marginTop="@dimen/activity_main_no_result_margin_top"
+        android:gravity="center_horizontal">
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/activity_main_no_result"/>
+    </LinearLayout>
+    <LinearLayout
+        android:id="@+id/activity_main_ll_indicator"
+        android:layout_below="@id/activity_main_edit_search"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginTop="@dimen/activity_main_indicator_overlay_margin_top"
+        android:gravity="center_horizontal"
+        android:alpha="0">
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminateOnly="true"
+            android:indeterminateBehavior="cycle"/>
     </LinearLayout>
 </RelativeLayout>
