@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <fraction name="activity_main_inactive_alpha">20%</fraction>
+    <fraction name="activity_artist_top10_tracks_inactive_alpha">20%</fraction>
 </resources>

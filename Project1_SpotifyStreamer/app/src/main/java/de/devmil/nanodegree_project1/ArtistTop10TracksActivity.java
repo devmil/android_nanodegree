@@ -148,8 +148,8 @@ public class ArtistTop10TracksActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                float inactiveAlpha = getResources().getFraction(R.fraction.activity_main_inactive_alpha, 1, 1);
-                int animationDurationMS = getResources().getInteger(R.integer.activity_main_alpha_change_durations_ms);
+                float inactiveAlpha = getResources().getFraction(R.fraction.activity_artist_top10_tracks_inactive_alpha, 1, 1);
+                int animationDurationMS = getResources().getInteger(R.integer.activity_artist_top10_tracks_alpha_change_durations_ms);
 
                 float lvResultAlpha;
                 float llNoResultAlpha;
