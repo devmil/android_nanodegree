@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical">
+    <ImageView
+        android:id="@+id/activity_artist_top10_tracks_entry_image"
+        android:layout_width="@dimen/activity_artist_top10_tracks_entry_image_size"
+        android:layout_height="@dimen/activity_artist_top10_tracks_entry_image_size"
+        android:scaleType="centerInside"
+        android:layout_margin="@dimen/activity_artist_top10_tracks_entry_margin" />
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/activity_artist_top10_tracks_entry_margin"
+        android:gravity="center_vertical|left"
+        android:orientation="vertical">
+        <TextView
+            android:id="@+id/activity_artist_top10_tracks_entry_track_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:id="@+id/activity_artist_top10_tracks_entry_track_album_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+</LinearLayout>

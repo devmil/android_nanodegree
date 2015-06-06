@@ -1,12 +1,12 @@
-package de.devmil.nanodegree_project1.processing;
+package de.devmil.nanodegree_project1.model;
 
 import android.os.AsyncTask;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import de.devmil.nanodegree_project1.model.SpotifyArtistResult;
-import de.devmil.nanodegree_project1.model.SpotifyArtistSearchResult;
+import de.devmil.nanodegree_project1.data.SpotifyArtistSearchResult;
+import de.devmil.nanodegree_project1.utils.ImageScoring;
 import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyService;
 import kaaes.spotify.webapi.android.models.Artist;
@@ -19,13 +19,23 @@ public class SpotifyArtistSearch {
     private SpotifyApi spotifyApi;
     private List<SpotifyArtistSearchListener> listeners = new ArrayList<>();
     private ArtistSearchTask currentSearch;
-
-    private int preferredArtistImageSizePx = 1000;
+    private ImageScoring<Image> scoring;
 
     public SpotifyArtistSearch(SpotifyApi api, int preferredArtistImageSizePx)
     {
         spotifyApi = api;
-        this.preferredArtistImageSizePx = preferredArtistImageSizePx;
+        scoring = new ImageScoring<>(preferredArtistImageSizePx,
+                new ImageScoring.ImageSizeRetriever<Image>() {
+                    @Override
+                    public int getHeight(Image image) {
+                        return image.height;
+                    }
+
+                    @Override
+                    public int getWidth(Image image) {
+                        return image.width;
+                    }
+                });
     }
 
     public void queryForNameAsync(String name, int delayMS)
@@ -60,7 +70,7 @@ public class SpotifyArtistSearch {
     }
 
     private SpotifyArtistSearchResult buildResult(String searchTerm, ArtistsPager artistsPager) {
-        ArrayList<SpotifyArtistResult> artists = new ArrayList<>();
+        ArrayList<SpotifyArtistSearchResult.Artist> artists = new ArrayList<>();
 
         List<Artist> spotifyArtists = null;
 
@@ -78,36 +88,15 @@ public class SpotifyArtistSearch {
                     imageUrl = getPreferredImage(a.images).url;
                 }
 
-                artists.add(new SpotifyArtistResult(a.id, a.name, imageUrl));
+                artists.add(new SpotifyArtistSearchResult.Artist(a.id, a.name, imageUrl));
             }
         }
         return new SpotifyArtistSearchResult(searchTerm, artists);
     }
 
     private Image getPreferredImage(List<Image> images) {
-        Image currentResult = null;
-        int currentResultDiff = Integer.MAX_VALUE;
-        for(Image image : images) {
 
-            //differences in width and height are scored equally
-            //lower resolutions get a penalty multiplicator :)
-
-            int diffY = image.height - preferredArtistImageSizePx;
-            int diffX = image.width - preferredArtistImageSizePx;
-
-            //bad bad low res image!
-            if(diffY < 0)
-                diffY *= 3;
-            if(diffX < 0)
-                diffX *= 3;
-
-            int diff = Math.abs(diffY) + Math.abs(diffX);
-            if(diff < currentResultDiff) {
-                currentResultDiff = diff;
-                currentResult = image;
-            }
-        }
-        return currentResult;
+        return scoring.getNearest(images);
     }
 
     private boolean isSomethingRunning() {
@@ -172,9 +161,9 @@ public class SpotifyArtistSearch {
                 return null;
             }
             String searchTerm;
-            if (params.length > 0) {
+            if (params.length == 1) {
                 //always use the last parameter passed here
-                searchTerm = params[params.length - 1];
+                searchTerm = params[0];
                 try {
                     ArtistsPager artistsPager = service.searchArtists(searchTerm);
 
@@ -186,7 +175,7 @@ public class SpotifyArtistSearch {
                 {
                     isCrashed = true;
                     onSearchRunningUpdated();
-                    onNewResult(new SpotifyArtistSearchResult(searchTerm, new ArrayList<SpotifyArtistResult>()));
+                    onNewResult(new SpotifyArtistSearchResult(searchTerm, new ArrayList<SpotifyArtistSearchResult.Artist>()));
                 }
             }
             return null;
@@ -194,11 +183,11 @@ public class SpotifyArtistSearch {
 
         @Override
         protected void onPostExecute (SpotifyArtistSearchResult spotifyArtistSearchResult){
-        if (spotifyArtistSearchResult != null) {
-            onNewResult(spotifyArtistSearchResult);
-            isFinished = true;
-            onSearchRunningUpdated();
+            if (spotifyArtistSearchResult != null) {
+                onNewResult(spotifyArtistSearchResult);
+                isFinished = true;
+                onSearchRunningUpdated();
+            }
         }
-    }
     }
 }

@@ -1,7 +1,9 @@
 package de.devmil.nanodegree_project1;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -10,6 +12,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -19,10 +22,9 @@ import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
 
-import de.devmil.nanodegree_project1.model.SpotifyArtistResult;
-import de.devmil.nanodegree_project1.model.SpotifyArtistSearchResult;
-import de.devmil.nanodegree_project1.processing.SpotifyArtistSearch;
-import de.devmil.nanodegree_project1.processing.SpotifyArtistSearchListener;
+import de.devmil.nanodegree_project1.data.SpotifyArtistSearchResult;
+import de.devmil.nanodegree_project1.model.SpotifyArtistSearch;
+import de.devmil.nanodegree_project1.model.SpotifyArtistSearchListener;
 import de.devmil.nanodegree_project1.utils.ViewUtils;
 import kaaes.spotify.webapi.android.SpotifyApi;
 
@@ -35,11 +37,14 @@ public class MainActivity extends AppCompatActivity {
     private EditText editSearch;
     private SearchResultAdapter resultAdapter;
     private SpotifyArtistSearch artistSearch;
+    private boolean restoringInstanceState = false;
 
     private boolean isProgressIndicatorActive = false;
     private boolean isResultAvailable = false;
 
     private static final int SEARCH_DELAY_MS = 1000;
+
+    private static final String KEY_SEARCH_RESULT = "de.devmil.nanodegree_project1.MainActivity.SEARCH_RESULT";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
 
         resultAdapter = new SearchResultAdapter(this);
 
-        int imageSizePxInView = (int)ViewUtils.getPxFromDip(this, getResources().getDimension(R.dimen.activity_main_result_image_size));
+        int imageSizePxInView = (int)ViewUtils.getPxFromDip(this, getResources().getDimension(R.dimen.activity_main_result_entry_image_size));
         artistSearch = new SpotifyArtistSearch(new SpotifyApi(), imageSizePxInView);
         artistSearch.addListener(new SpotifyArtistSearchListener() {
             @Override
@@ -64,19 +69,38 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onNewResult(SpotifyArtistSearchResult result) {
                 resultAdapter.setCurrentResult(result);
-                setResultAvailable(result.getArtists().size() > 0);
+                updateIsResultAvailableState();
             }
         });
 
         lvResult.setAdapter(resultAdapter);
+        lvResult.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                SpotifyArtistSearchResult.Artist currentArtist = (SpotifyArtistSearchResult.Artist)resultAdapter.getItem(position);
+                if(currentArtist != null) {
+                    Intent launchIntent = ArtistTop10TracksActivity
+                            .createLaunchIntent(
+                                    MainActivity.this,
+                                    currentArtist.getId(),
+                                    currentArtist.getName());
+                    startActivity(launchIntent);
+                }
+            }
+        });
 
         editSearch.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                String searchTerm = v.getText().toString();
+                //don't trigger a new search automatically while the instance is restored
+                if(restoringInstanceState) {
+                    return true;
+                }
                 //Hitting the Enter key triggers an immediate search
                 if(actionId == EditorInfo.IME_NULL
                         && event.getAction() == KeyEvent.ACTION_DOWN) {
-                    artistSearch.queryForNameAsync(v.getText().toString(), 0);
+                    artistSearch.queryForNameAsync(searchTerm, 0);
                     return true;
                 }
                 return false;
@@ -90,8 +114,13 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
+                //don't trigger a new search automatically while the instance is restored
+                if(restoringInstanceState) {
+                    return;
+                }
+                String searchTerm = s.toString();
                 //Text change triggers a delayed search
-                artistSearch.queryForNameAsync(s.toString(), SEARCH_DELAY_MS);
+                artistSearch.queryForNameAsync(searchTerm, SEARCH_DELAY_MS);
             }
 
             @Override
@@ -101,8 +130,49 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void setResultAvailable(boolean available)
+    //LifeCycle
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if(resultAdapter != null) {
+            SpotifyArtistSearchResult result = resultAdapter.getCurrentResult();
+            if(result != null) {
+                outState.putParcelable(KEY_SEARCH_RESULT, result);
+            }
+        }
+    }
+
+    @Override
+    protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
+        restoringInstanceState = true;
+        if(savedInstanceState.containsKey(KEY_SEARCH_RESULT)) {
+            SpotifyArtistSearchResult result = savedInstanceState.getParcelable(KEY_SEARCH_RESULT);
+            if(result != null && resultAdapter != null) {
+                resultAdapter.setCurrentResult(result);
+                updateIsResultAvailableState();
+            }
+        }
+        super.onRestoreInstanceState(savedInstanceState);
+        restoringInstanceState = false;
+        if(resultAdapter != null) {
+            String searchTerm = editSearch.getText().toString();
+            SpotifyArtistSearchResult currentResult = resultAdapter.getCurrentResult();
+            if(currentResult != null
+                    && !searchTerm.equals(currentResult.getSearchTerm())) {
+                artistSearch.queryForNameAsync(searchTerm, 0);
+            }
+        }
+
+    }
+
+    private void updateIsResultAvailableState()
     {
+        boolean available = false;
+        if(resultAdapter != null) {
+            SpotifyArtistSearchResult currentResult = resultAdapter.getCurrentResult();
+            available = currentResult != null && currentResult.getArtists().size() > 0;
+        }
         isResultAvailable = available;
         updateAlphaValues();
     }
@@ -138,11 +208,8 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 if(isProgressIndicatorActive) {
-                    //only adapt the already visible view and leave the other one untouched
-                    if(lvResultAlpha == 1)
-                        lvResultAlpha = inactiveAlpha;
-                    if(llNoResultAlpha == 1)
-                        llNoResultAlpha = inactiveAlpha;
+                    lvResultAlpha *= inactiveAlpha;
+                    llNoResultAlpha *= inactiveAlpha;
 
                     llIndicatorAlpha = 1;
                 }
@@ -158,8 +225,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     class SearchResultAdapter extends BaseAdapter {
-        class ViewHolder
-        {
+        class ViewHolder {
             String artistId;
             ImageView ivArtist;
             TextView txtName;
@@ -169,10 +235,13 @@ public class MainActivity extends AppCompatActivity {
         private Context context;
         private LayoutInflater inflater;
 
-        SearchResultAdapter(Context context)
-        {
+        SearchResultAdapter(Context context) {
             this.context = context;
-            inflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+            inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        }
+
+        public SpotifyArtistSearchResult getCurrentResult() {
+            return currentResult;
         }
 
         @Override
@@ -208,7 +277,7 @@ public class MainActivity extends AppCompatActivity {
             }
             ViewHolder vh = (ViewHolder)convertView.getTag();
 
-            SpotifyArtistResult entry = (SpotifyArtistResult)getItem(position);
+            SpotifyArtistSearchResult.Artist entry = (SpotifyArtistSearchResult.Artist)getItem(position);
 
             //nothing to do here, the data in the view is already valid
             if(entry.getId().equals(vh.artistId))
@@ -219,7 +288,7 @@ public class MainActivity extends AppCompatActivity {
             return convertView;
         }
 
-        private void setEntryToViews(SpotifyArtistResult entry, ViewHolder viewHolder) {
+        private void setEntryToViews(SpotifyArtistSearchResult.Artist entry, ViewHolder viewHolder) {
             String imageUrlToLoad = null;
             if(entry != null) {
                 viewHolder.txtName.setText(entry.getName());

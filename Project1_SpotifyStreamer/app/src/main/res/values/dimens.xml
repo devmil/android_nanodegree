@@ -3,9 +3,15 @@
     <dimen name="activity_horizontal_margin">16dp</dimen>
     <dimen name="activity_vertical_margin">16dp</dimen>
 
-    <dimen name="activity_main_result_image_size">80dp</dimen>
-    <dimen name="activity_main_result_margin">10dp</dimen>
+    <dimen name="activity_main_result_entry_image_size">80dp</dimen>
+    <dimen name="activity_main_result_entry_margin">10dp</dimen>
 
-    <dimen name="activity_main_no_result_margin_top">20dp</dimen>
-    <dimen name="activity_main_indicator_overlay_margin_top">50dp</dimen>
+    <dimen name="activity_no_result_margin_top">20dp</dimen>
+    <dimen name="activity_indicator_overlay_margin_top">50dp</dimen>
+
+    <dimen name="activity_artist_top10_tracks_entry_image_size">80dp</dimen>
+    <dimen name="activity_artist_top10_tracks_entry_margin">10dp</dimen>
+
+    <dimen name="activity_playing_image_size">300dp</dimen>
+
 </resources>
