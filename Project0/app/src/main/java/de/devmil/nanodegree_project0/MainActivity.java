@@ -1,6 +1,8 @@
 package de.devmil.nanodegree_project0;
 
 import android.app.Activity;
+import android.content.ComponentName;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -30,7 +32,7 @@ public class MainActivity extends Activity {
         btnCapstone = (Button)findViewById(R.id.activity_main_btn_my_own_app);
 
 
-        configureButton(btnStreamer, R.string.toast_launch_spotify_streamer);
+        configureButton(btnStreamer, new ComponentName("de.devmil.nanodegree_project1", "de.devmil.nanodegree_project1.MainActivity"));
         configureButton(btnScores, R.string.toast_launch_scores);
         configureButton(btnLibrary, R.string.toast_launch_library);
         configureButton(btnBuildItBigger, R.string.toast_launch_build_it_bigger);
@@ -44,6 +46,19 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 Toast.makeText(MainActivity.this, toastMessageOnClickId, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void configureButton(Button button, final ComponentName activityToLaunch)
+    {
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent launchIntent = new Intent();
+                launchIntent.setComponent(activityToLaunch);
+
+                startActivity(launchIntent);
             }
         });
     }
