@@ -4,7 +4,7 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     android:paddingBottom="@dimen/activity_vertical_margin"
-    tools:context="de.devmil.nanodegree_project1.ArtistTop10TracksActivity">
+    tools:context="de.devmil.nanodegree_spotifystreamer.ArtistTop10TracksActivity">
     <ListView
         android:id="@+id/activity_artist_top10_tracks_list"
         android:layout_alignParentTop="true"

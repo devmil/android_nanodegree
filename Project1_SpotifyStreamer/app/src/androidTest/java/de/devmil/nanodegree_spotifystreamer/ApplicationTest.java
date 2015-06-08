@@ -1,4 +1,4 @@
-package de.devmil.nanodegree_project1;
+package de.devmil.nanodegree_spotifystreamer;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

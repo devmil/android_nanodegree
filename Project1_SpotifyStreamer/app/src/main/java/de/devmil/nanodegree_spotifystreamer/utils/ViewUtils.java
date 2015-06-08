@@ -1,4 +1,4 @@
-package de.devmil.nanodegree_project1.utils;
+package de.devmil.nanodegree_spotifystreamer.utils;
 
 import android.content.Context;
 import android.util.TypedValue;

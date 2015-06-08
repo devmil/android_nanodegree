@@ -1,4 +1,4 @@
-package de.devmil.nanodegree_project1.model;
+package de.devmil.nanodegree_spotifystreamer.model;
 
 import android.os.AsyncTask;
 
@@ -6,8 +6,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import de.devmil.nanodegree_project1.data.SpotifyTopTracksSearchResult;
-import de.devmil.nanodegree_project1.utils.ImageScoring;
+import de.devmil.nanodegree_spotifystreamer.data.SpotifyTopTracksSearchResult;
+import de.devmil.nanodegree_spotifystreamer.utils.ImageScoring;
 import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyService;
 import kaaes.spotify.webapi.android.models.Image;

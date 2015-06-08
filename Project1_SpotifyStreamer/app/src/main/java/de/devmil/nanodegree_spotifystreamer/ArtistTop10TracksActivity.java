@@ -1,4 +1,4 @@
-package de.devmil.nanodegree_project1;
+package de.devmil.nanodegree_spotifystreamer;
 
 import android.content.Context;
 import android.content.Intent;
@@ -18,10 +18,10 @@ import com.squareup.picasso.Picasso;
 
 import java.util.Locale;
 
-import de.devmil.nanodegree_project1.data.SpotifyTopTracksSearchResult;
-import de.devmil.nanodegree_project1.model.SpotifyTopTracksSearch;
-import de.devmil.nanodegree_project1.model.SpotifyTopTracksSearchListener;
-import de.devmil.nanodegree_project1.utils.ViewUtils;
+import de.devmil.nanodegree_spotifystreamer.data.SpotifyTopTracksSearchResult;
+import de.devmil.nanodegree_spotifystreamer.model.SpotifyTopTracksSearch;
+import de.devmil.nanodegree_spotifystreamer.model.SpotifyTopTracksSearchListener;
+import de.devmil.nanodegree_spotifystreamer.utils.ViewUtils;
 import kaaes.spotify.webapi.android.SpotifyApi;
 
 public class ArtistTop10TracksActivity extends AppCompatActivity {

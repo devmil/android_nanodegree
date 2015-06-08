@@ -1,6 +1,6 @@
-package de.devmil.nanodegree_project1.model;
+package de.devmil.nanodegree_spotifystreamer.model;
 
-import de.devmil.nanodegree_project1.data.SpotifyArtistSearchResult;
+import de.devmil.nanodegree_spotifystreamer.data.SpotifyArtistSearchResult;
 
 public interface SpotifyArtistSearchListener {
     /**

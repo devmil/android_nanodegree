@@ -32,7 +32,7 @@ public class MainActivity extends Activity {
         btnCapstone = (Button)findViewById(R.id.activity_main_btn_my_own_app);
 
 
-        configureButton(btnStreamer, new ComponentName("de.devmil.nanodegree_project1", "de.devmil.nanodegree_project1.MainActivity"));
+        configureButton(btnStreamer, new ComponentName("de.devmil.nanodegree_spotifystreamer", "de.devmil.nanodegree_spotifystreamer.MainActivity"));
         configureButton(btnScores, R.string.toast_launch_scores);
         configureButton(btnLibrary, R.string.toast_launch_library);
         configureButton(btnBuildItBigger, R.string.toast_launch_build_it_bigger);

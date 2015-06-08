@@ -1,4 +1,4 @@
-package de.devmil.nanodegree_project1.data;
+package de.devmil.nanodegree_spotifystreamer.data;
 
 import android.os.Parcel;
 import android.os.Parcelable;

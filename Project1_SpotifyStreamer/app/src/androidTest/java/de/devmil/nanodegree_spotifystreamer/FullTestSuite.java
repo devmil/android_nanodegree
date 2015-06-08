@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.devmil.nanodegree_project1;
+package de.devmil.nanodegree_spotifystreamer;
 
 import android.test.suitebuilder.TestSuiteBuilder;
 

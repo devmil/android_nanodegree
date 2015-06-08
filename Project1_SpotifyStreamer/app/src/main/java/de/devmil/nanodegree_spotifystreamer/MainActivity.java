@@ -1,4 +1,4 @@
-package de.devmil.nanodegree_project1;
+package de.devmil.nanodegree_spotifystreamer;
 
 import android.content.Context;
 import android.content.Intent;
@@ -22,10 +22,10 @@ import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
 
-import de.devmil.nanodegree_project1.data.SpotifyArtistSearchResult;
-import de.devmil.nanodegree_project1.model.SpotifyArtistSearch;
-import de.devmil.nanodegree_project1.model.SpotifyArtistSearchListener;
-import de.devmil.nanodegree_project1.utils.ViewUtils;
+import de.devmil.nanodegree_spotifystreamer.data.SpotifyArtistSearchResult;
+import de.devmil.nanodegree_spotifystreamer.model.SpotifyArtistSearch;
+import de.devmil.nanodegree_spotifystreamer.model.SpotifyArtistSearchListener;
+import de.devmil.nanodegree_spotifystreamer.utils.ViewUtils;
 import kaaes.spotify.webapi.android.SpotifyApi;
 
 public class MainActivity extends AppCompatActivity {
