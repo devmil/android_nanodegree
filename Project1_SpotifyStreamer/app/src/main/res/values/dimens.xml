@@ -14,4 +14,8 @@
 
     <dimen name="activity_playing_image_size">300dp</dimen>
 
+    <dimen name="activity_player_margin_vertical_img_album">20dip</dimen>
+    <dimen name="activity_player_margin_vertical_slider_progress">20dip</dimen>
+    <dimen name="activity_main_margin_between_control_buttons">10dp</dimen>
+
 </resources>

@@ -44,7 +44,10 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int SEARCH_DELAY_MS = 1000;
 
-    private static final String KEY_SEARCH_RESULT = "de.devmil.nanodegree_project1.MainActivity.SEARCH_RESULT";
+    private static final String KEY_SEARCH_RESULT = "de.devmil.nanodegree_spotifystreamer.MainActivity.SEARCH_RESULT";
+    private static final String KEY_SCROLL_POSITION = "de.devmil.nanodegree_spotifystreamer.MainActivity.SCROLL_POSITION";
+
+    private Integer initialScrollPosition = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -128,6 +131,11 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+
+        if(savedInstanceState != null && savedInstanceState.containsKey(KEY_SCROLL_POSITION)) {
+            initialScrollPosition = savedInstanceState.getInt(KEY_SCROLL_POSITION);
+            lvResult.smoothScrollToPosition(initialScrollPosition);
+        }
     }
 
     //LifeCycle
@@ -141,6 +149,7 @@ public class MainActivity extends AppCompatActivity {
                 outState.putParcelable(KEY_SEARCH_RESULT, result);
             }
         }
+        outState.putInt(KEY_SCROLL_POSITION, lvResult.getFirstVisiblePosition());
     }
 
     @Override
@@ -163,7 +172,6 @@ public class MainActivity extends AppCompatActivity {
                 artistSearch.queryForNameAsync(searchTerm, 0);
             }
         }
-
     }
 
     private void updateIsResultAvailableState()

@@ -8,6 +8,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -26,8 +27,8 @@ import kaaes.spotify.webapi.android.SpotifyApi;
 
 public class ArtistTop10TracksActivity extends AppCompatActivity {
 
-    private static final String PARAM_ARTIST_ID = "de.devmil.nanodegree_project1.PARAM_ARTIST_ID";
-    private static final String PARAM_ARTIST_NAME = "de.devmil.nanodegree_project1.PARAM_ARTIST_NAME";
+    private static final String PARAM_ARTIST_ID = "de.devmil.nanodegree_spotifystreamer.PARAM_ARTIST_ID";
+    private static final String PARAM_ARTIST_NAME = "de.devmil.nanodegree_spotifystreamer.PARAM_ARTIST_NAME";
 
     public static Intent createLaunchIntent(Context context, String artistId, String artistName) {
         Intent result = new Intent(context, ArtistTop10TracksActivity.class);
@@ -37,7 +38,7 @@ public class ArtistTop10TracksActivity extends AppCompatActivity {
         return result;
     }
 
-    private static final String KEY_TRACKS_RESULT = "de.devmil.nanodegree_project1.ArtistTop10TracksActivity.TRACKS_RESULT";
+    private static final String KEY_TRACKS_RESULT = "de.devmil.nanodegree_spotifystreamer.ArtistTop10TracksActivity.TRACKS_RESULT";
 
     private ListView trackListView;
     private LinearLayout llNoResult;
@@ -57,7 +58,7 @@ public class ArtistTop10TracksActivity extends AppCompatActivity {
         setContentView(R.layout.activity_artist_top10_tracks);
 
         String artistId = getIntent().getStringExtra(PARAM_ARTIST_ID);
-        String artistName = getIntent().getStringExtra(PARAM_ARTIST_NAME);
+        final String artistName = getIntent().getStringExtra(PARAM_ARTIST_NAME);
 
         //noinspection ConstantConditions
         getSupportActionBar().setSubtitle(artistName);
@@ -69,6 +70,16 @@ public class ArtistTop10TracksActivity extends AppCompatActivity {
         resultAdapter = new SearchResultAdapter(this);
 
         trackListView.setAdapter(resultAdapter);
+
+        trackListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                SpotifyTopTracksSearchResult searchResult = resultAdapter.getCurrentResult();
+                if(searchResult != null) {
+                    startActivity(PlayerActivity.createLaunchIntent(ArtistTop10TracksActivity.this, searchResult, position, artistName));
+                }
+            }
+        });
 
         int imageSizePxSmallInView = (int) ViewUtils.getPxFromDip(this, getResources().getDimension(R.dimen.activity_artist_top10_tracks_entry_image_size));
         int imageSizePxLargeInView = (int) ViewUtils.getPxFromDip(this, getResources().getDimension(R.dimen.activity_playing_image_size));
