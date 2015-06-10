@@ -22,8 +22,8 @@
         <activity
             android:name=".ArtistTop10TracksActivity"
             android:label="@string/title_activity_artist_top10_tracks"
-            android:parentActivityName=".MainActivity"
-            android:launchMode="singleTop">
+            android:launchMode="singleTop"
+            android:parentActivityName=".MainActivity" >
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="de.devmil.nanodegree_spotifystreamer.MainActivity" />
@@ -31,11 +31,17 @@
         <activity
             android:name=".PlayerActivity"
             android:label="@string/title_activity_player"
-            android:parentActivityName=".ArtistTop10TracksActivity">
+            android:parentActivityName=".ArtistTop10TracksActivity" >
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="de.devmil.nanodegree_spotifystreamer.ArtistTop10TracksActivity" />
         </activity>
+
+        <service
+            android:name=".service.MediaPlayService"
+            android:enabled="true"
+            android:exported="false" >
+        </service>
     </application>
 
 </manifest>

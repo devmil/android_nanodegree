@@ -22,7 +22,8 @@ import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
 
-import de.devmil.nanodegree_spotifystreamer.data.SpotifyArtistSearchResult;
+import de.devmil.nanodegree_spotifystreamer.data.Artist;
+import de.devmil.nanodegree_spotifystreamer.data.ArtistSearchResult;
 import de.devmil.nanodegree_spotifystreamer.model.SpotifyArtistSearch;
 import de.devmil.nanodegree_spotifystreamer.model.SpotifyArtistSearchListener;
 import de.devmil.nanodegree_spotifystreamer.utils.ViewUtils;
@@ -44,8 +45,8 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int SEARCH_DELAY_MS = 1000;
 
-    private static final String KEY_SEARCH_RESULT = "de.devmil.nanodegree_spotifystreamer.MainActivity.SEARCH_RESULT";
-    private static final String KEY_SCROLL_POSITION = "de.devmil.nanodegree_spotifystreamer.MainActivity.SCROLL_POSITION";
+    private static final String KEY_SEARCH_RESULT = "SEARCH_RESULT";
+    private static final String KEY_SCROLL_POSITION = "SCROLL_POSITION";
 
     private Integer initialScrollPosition = null;
 
@@ -70,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onNewResult(SpotifyArtistSearchResult result) {
+            public void onNewResult(ArtistSearchResult result) {
                 resultAdapter.setCurrentResult(result);
                 updateIsResultAvailableState();
             }
@@ -80,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
         lvResult.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                SpotifyArtistSearchResult.Artist currentArtist = (SpotifyArtistSearchResult.Artist)resultAdapter.getItem(position);
+                Artist currentArtist = (Artist)resultAdapter.getItem(position);
                 if(currentArtist != null) {
                     Intent launchIntent = ArtistTop10TracksActivity
                             .createLaunchIntent(
@@ -144,7 +145,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         if(resultAdapter != null) {
-            SpotifyArtistSearchResult result = resultAdapter.getCurrentResult();
+            ArtistSearchResult result = resultAdapter.getCurrentResult();
             if(result != null) {
                 outState.putParcelable(KEY_SEARCH_RESULT, result);
             }
@@ -156,7 +157,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
         restoringInstanceState = true;
         if(savedInstanceState.containsKey(KEY_SEARCH_RESULT)) {
-            SpotifyArtistSearchResult result = savedInstanceState.getParcelable(KEY_SEARCH_RESULT);
+            ArtistSearchResult result = savedInstanceState.getParcelable(KEY_SEARCH_RESULT);
             if(result != null && resultAdapter != null) {
                 resultAdapter.setCurrentResult(result);
                 updateIsResultAvailableState();
@@ -166,7 +167,7 @@ public class MainActivity extends AppCompatActivity {
         restoringInstanceState = false;
         if(resultAdapter != null) {
             String searchTerm = editSearch.getText().toString();
-            SpotifyArtistSearchResult currentResult = resultAdapter.getCurrentResult();
+            ArtistSearchResult currentResult = resultAdapter.getCurrentResult();
             if(currentResult != null
                     && !searchTerm.equals(currentResult.getSearchTerm())) {
                 artistSearch.queryForNameAsync(searchTerm, 0);
@@ -178,7 +179,7 @@ public class MainActivity extends AppCompatActivity {
     {
         boolean available = false;
         if(resultAdapter != null) {
-            SpotifyArtistSearchResult currentResult = resultAdapter.getCurrentResult();
+            ArtistSearchResult currentResult = resultAdapter.getCurrentResult();
             available = currentResult != null && currentResult.getArtists().size() > 0;
         }
         isResultAvailable = available;
@@ -239,7 +240,7 @@ public class MainActivity extends AppCompatActivity {
             TextView txtName;
         }
 
-        private SpotifyArtistSearchResult currentResult;
+        private ArtistSearchResult currentResult;
         private Context context;
         private LayoutInflater inflater;
 
@@ -248,7 +249,7 @@ public class MainActivity extends AppCompatActivity {
             inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         }
 
-        public SpotifyArtistSearchResult getCurrentResult() {
+        public ArtistSearchResult getCurrentResult() {
             return currentResult;
         }
 
@@ -285,7 +286,7 @@ public class MainActivity extends AppCompatActivity {
             }
             ViewHolder vh = (ViewHolder)convertView.getTag();
 
-            SpotifyArtistSearchResult.Artist entry = (SpotifyArtistSearchResult.Artist)getItem(position);
+            Artist entry = (Artist)getItem(position);
 
             //nothing to do here, the data in the view is already valid
             if(entry.getId().equals(vh.artistId))
@@ -296,7 +297,7 @@ public class MainActivity extends AppCompatActivity {
             return convertView;
         }
 
-        private void setEntryToViews(SpotifyArtistSearchResult.Artist entry, ViewHolder viewHolder) {
+        private void setEntryToViews(Artist entry, ViewHolder viewHolder) {
             String imageUrlToLoad = null;
             if(entry != null) {
                 viewHolder.txtName.setText(entry.getName());
@@ -321,7 +322,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        public void setCurrentResult(SpotifyArtistSearchResult currentResult) {
+        public void setCurrentResult(ArtistSearchResult currentResult) {
             this.currentResult = currentResult;
             //just to be on the safe side.
             //the current implementation of "SpotifyArtistSearch" fires its event in the UI thread but

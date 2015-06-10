@@ -1,6 +1,6 @@
 package de.devmil.nanodegree_spotifystreamer.model;
 
-import de.devmil.nanodegree_spotifystreamer.data.SpotifyTopTracksSearchResult;
+import de.devmil.nanodegree_spotifystreamer.data.TracksSearchResult;
 
 public interface SpotifyTopTracksSearchListener {
     /**
@@ -13,5 +13,5 @@ public interface SpotifyTopTracksSearchListener {
      * Gets fired whenever there is a new result available
      * @param result contains the result of the finished search
      */
-    void onNewResult(SpotifyTopTracksSearchResult result);
+    void onNewResult(TracksSearchResult result);
 }

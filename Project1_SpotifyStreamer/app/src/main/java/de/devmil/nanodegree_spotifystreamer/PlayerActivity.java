@@ -1,18 +1,17 @@
 package de.devmil.nanodegree_spotifystreamer;
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.media.AudioManager;
-import android.media.Image;
 import android.media.MediaPlayer;
-import android.media.TimedText;
+import android.os.IBinder;
 import android.os.PersistableBundle;
+import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
@@ -22,15 +21,24 @@ import com.squareup.picasso.Picasso;
 
 import java.io.IOException;
 
-import de.devmil.nanodegree_spotifystreamer.data.SpotifyTopTracksSearchResult;
+import de.devmil.nanodegree_spotifystreamer.data.PlayerData;
+import de.devmil.nanodegree_spotifystreamer.data.TracksSearchResult;
+import de.devmil.nanodegree_spotifystreamer.data.Track;
+import de.devmil.nanodegree_spotifystreamer.event.PlaybackNavigationOptionsChangedEvent;
+import de.devmil.nanodegree_spotifystreamer.event.PlaybackPositionChangedEvent;
+import de.devmil.nanodegree_spotifystreamer.event.PlaybackState;
+import de.devmil.nanodegree_spotifystreamer.event.PlaybackStateChangedEvent;
+import de.devmil.nanodegree_spotifystreamer.event.PlaybackTrackChangedEvent;
+import de.devmil.nanodegree_spotifystreamer.service.MediaPlayService;
+import de.greenrobot.event.EventBus;
 
 public class PlayerActivity extends AppCompatActivity {
 
-    private static final String PARAM_SEARCH_RESULT = "de.devmil.nanodegree_spotifystreamer.PlayerActivity.PARAM_SEARCH_RESULT";
-    private static final String PARAM_SELECTED_TRACK_INDEX = "de.devmil.nanodegree_spotifystreamer.PlayerActivity.PARAM_SELECTED_TRACK_INDEX";
-    private static final String PARAM_ARTIST_NAME = "de.devmil.nanodegree_spotifystreamer.PlayerActivity.PARAM_ARTIST_NAME";
+    private static final String PARAM_SEARCH_RESULT = "PARAM_SEARCH_RESULT";
+    private static final String PARAM_SELECTED_TRACK_INDEX = "PARAM_SELECTED_TRACK_INDEX";
+    private static final String PARAM_ARTIST_NAME = "PARAM_ARTIST_NAME";
 
-    public static Intent createLaunchIntent(Context context, SpotifyTopTracksSearchResult searchResult, int selectedTrackIndex, String artistName)
+    public static Intent createLaunchIntent(Context context, TracksSearchResult searchResult, int selectedTrackIndex, String artistName)
     {
         Intent result = new Intent(context, PlayerActivity.class);
         result.putExtra(PARAM_SEARCH_RESULT, searchResult);
@@ -39,7 +47,7 @@ public class PlayerActivity extends AppCompatActivity {
         return result;
     }
 
-    private SpotifyTopTracksSearchResult searchResult;
+    private TracksSearchResult searchResult;
     private int selectedTrackIndex;
     private String artistName;
 
@@ -54,8 +62,10 @@ public class PlayerActivity extends AppCompatActivity {
     private ImageButton buttonPlayPause;
     private ImageButton buttonNext;
 
-    private MediaPlayer mediaPlayer;
     private boolean userSlideMode = false;
+
+    private MediaPlayService.MediaPlayBinder serviceBinder;
+    private ServiceConnection serviceConnection;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,8 +74,7 @@ public class PlayerActivity extends AppCompatActivity {
 
         Intent intent = getIntent();
 
-        int initialSelectedTrackIndex = intent.getIntExtra(PARAM_SELECTED_TRACK_INDEX, 0);
-
+        selectedTrackIndex = intent.getIntExtra(PARAM_SELECTED_TRACK_INDEX, 0);
         searchResult = intent.getParcelableExtra(PARAM_SEARCH_RESULT);
         artistName = intent.getStringExtra(PARAM_ARTIST_NAME);
 
@@ -99,8 +108,9 @@ public class PlayerActivity extends AppCompatActivity {
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
                 userSlideMode = false;
-                mediaPlayer.seekTo(seekBar.getProgress());
-                updateMediaControls();
+                if(serviceBinder != null) {
+                    serviceBinder.seekTo(seekBar.getProgress());
+                }
             }
         });
 
@@ -123,19 +133,17 @@ public class PlayerActivity extends AppCompatActivity {
             }
         });
 
-        setTrackData(initialSelectedTrackIndex);
+        setTrackData(searchResult.getTracks().get(selectedTrackIndex), selectedTrackIndex);
 
         if(savedInstanceState == null) {
             //TODO: do some fancy input animation?
         }
-    }
 
-    @Override
-    protected void onDestroy() {
-        if(mediaPlayer != null) {
-            mediaPlayer.release();
+        if(!EventBus.getDefault().isRegistered(this)) {
+            EventBus.getDefault().register(this);
         }
-        super.onDestroy();
+
+        bindToMusicPlayService();
     }
 
     @Override
@@ -151,33 +159,19 @@ public class PlayerActivity extends AppCompatActivity {
     }
 
     private void navigateNext() {
-        int newIndex = selectedTrackIndex+1;
-        if(newIndex < searchResult.getTracks().size()) {
-            setTrackData(newIndex);
-        }
+        MediaPlayService.executeCommand(this, MediaPlayService.COMMAND_NEXT);
     }
 
     private void navigatePrev() {
-        int newIndex = selectedTrackIndex - 1;
-        if(newIndex >= 0) {
-            setTrackData(newIndex);
-        }
+        MediaPlayService.executeCommand(this, MediaPlayService.COMMAND_PREV);
     }
 
     private void playPause()
     {
-        //TODO control play / pause state and toggle between them
+        MediaPlayService.executeCommand(this, MediaPlayService.COMMAND_TOGGLE_PLAY_PAUSE);
     }
 
-    private void setTrackData(int selectedTrackIndex) {
-        if(this.selectedTrackIndex == selectedTrackIndex) {
-            return;
-        }
-        if(searchResult.getTracks().size() <= selectedTrackIndex) {
-            return;
-        }
-        SpotifyTopTracksSearchResult.Track track = searchResult.getTracks().get(selectedTrackIndex);
-
+    private void setTrackData(Track track, int selectedTrackIndex) {
         labelTitle.setText(track.getTrackName());
 
         if(track.getAlbumThumbnailLargeUrl() != null) {
@@ -189,86 +183,12 @@ public class PlayerActivity extends AppCompatActivity {
         labelAlbum.setText(track.getAlbumName());
 
         this.selectedTrackIndex = selectedTrackIndex;
-
-        if(mediaPlayer != null) {
-            mediaPlayer.release();
-            mediaPlayer = null;
-            setImageButtonEnabled(buttonPlayPause, false);
-        }
-        mediaPlayer = new MediaPlayer();
-        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-        mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-            @Override
-            public void onPrepared(MediaPlayer mp) {
-                initMediaControls();
-                updateMediaControls();
-            }
-        });
-        mediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
-            @Override
-            public boolean onError(MediaPlayer mp, int what, int extra) {
-                //TODO: handle errors, cleanup MediaPlayer? try again? ...
-                return false;
-            }
-        });
-        try {
-            mediaPlayer.setDataSource(track.getPreviewUrl());
-            mediaPlayer.prepareAsync();
-        } catch (IOException e) {
-            e.printStackTrace();
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
-        initNavigationControls();
-    }
-
-    private void initNavigationControls()
-    {
-        setImageButtonEnabled(buttonNext, selectedTrackIndex < searchResult.getTracks().size() - 1);
-        setImageButtonEnabled(buttonPrev, selectedTrackIndex > 0);
-    }
-
-    private void initMediaControls()
-    {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if(mediaPlayer != null) {
-                    MediaPlayer localMediaPlayerCopy = mediaPlayer;
-                    int duration = localMediaPlayerCopy.getDuration();
-
-                    sliderPosition.setMax(duration);
-
-                    labelDuration.setText(formatDurationString(duration));
-                    labelPlayed.setText(formatDurationString(0));
-
-                    setImageButtonEnabled(buttonPlayPause, true);
-                } else {
-                    setImageButtonEnabled(buttonPlayPause, false);
-                }
-            }
-        });
     }
 
     private void setImageButtonEnabled(ImageButton button, boolean enabled) {
         button.setEnabled(enabled);
         button.setClickable(enabled);
         button.setAlpha(enabled ? 1.0f : 0.5f);
-    }
-
-    private void updateMediaControls()
-    {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if(mediaPlayer != null) {
-                    MediaPlayer localMediaPlayerCopy = mediaPlayer;
-                    int position = localMediaPlayerCopy.getCurrentPosition();
-
-                    labelPlayed.setText(formatDurationString(position));
-                }
-            }
-        });
     }
 
     private String formatDurationString(int durationMS) {
@@ -278,5 +198,66 @@ public class PlayerActivity extends AppCompatActivity {
         int seconds = remaining / 1000;
 
         return String.format("%02d:%02d", minutes, seconds);
+    }
+
+    private void bindToMusicPlayService() {
+        if(serviceConnection != null) {
+            return;
+        }
+        Intent serviceStartIntent = new Intent(this, MediaPlayService.class);
+        serviceConnection = new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder service) {
+                serviceBinder = (MediaPlayService.MediaPlayBinder)service;
+                serviceBinder.setPlayerData(new PlayerData(artistName, searchResult.getTracks(), selectedTrackIndex));
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName name) {
+                serviceBinder = null;
+            }
+        };
+        bindService(serviceStartIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    private void unbindFromMusicPlayService() {
+        if(serviceConnection == null) {
+            return;
+        }
+        unbindService(serviceConnection);
+        serviceBinder = null;
+        serviceConnection = null;
+    }
+
+    @Override
+    protected void onPause() {
+        unbindFromMusicPlayService();
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        bindToMusicPlayService();
+        super.onResume();
+    }
+
+    public void onEventMainThread(PlaybackNavigationOptionsChangedEvent e) {
+        setImageButtonEnabled(buttonNext, e.isCanNavigateNext());
+        setImageButtonEnabled(buttonPrev, e.isCanNavigatePrev());
+    }
+
+    public void onEventMainThread(PlaybackPositionChangedEvent e) {
+        labelPlayed.setText(formatDurationString(e.getPositionMS()));
+        labelDuration.setText(formatDurationString(e.getDurationMS()));
+    }
+
+    public void onEventMainThread(PlaybackStateChangedEvent e) {
+        int newState = e.getNewState();
+        boolean canPlay = newState > PlaybackState.INIT;
+        setImageButtonEnabled(buttonPlayPause, canPlay);
+    }
+
+    public void onEventMainThread(PlaybackTrackChangedEvent e) {
+        setTrackData(e.getNewTrack(), e.getNewIndex());
     }
 }

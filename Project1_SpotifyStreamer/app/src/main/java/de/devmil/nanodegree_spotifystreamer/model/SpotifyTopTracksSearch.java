@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import de.devmil.nanodegree_spotifystreamer.data.SpotifyTopTracksSearchResult;
+import de.devmil.nanodegree_spotifystreamer.data.TracksSearchResult;
 import de.devmil.nanodegree_spotifystreamer.utils.ImageScoring;
 import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyService;
@@ -88,7 +88,7 @@ public class SpotifyTopTracksSearch {
         }
     }
 
-    private void onNewResult(SpotifyTopTracksSearchResult result)
+    private void onNewResult(TracksSearchResult result)
     {
         for(SpotifyTopTracksSearchListener listener : listeners)
         {
@@ -97,7 +97,7 @@ public class SpotifyTopTracksSearch {
         }
     }
 
-    class TopTracksSearchTask extends AsyncTask<String, Integer, SpotifyTopTracksSearchResult> {
+    class TopTracksSearchTask extends AsyncTask<String, Integer, TracksSearchResult> {
         private SpotifyService service;
         private boolean isFinished;
         private boolean isCrashed;
@@ -118,7 +118,7 @@ public class SpotifyTopTracksSearch {
         }
 
         @Override
-        protected SpotifyTopTracksSearchResult doInBackground(String... params) {
+        protected TracksSearchResult doInBackground(String... params) {
             onSearchRunningUpdated();
             if (isCancelled()) {
                 return null;
@@ -142,10 +142,10 @@ public class SpotifyTopTracksSearch {
             catch (RetrofitError error) {
                 isCrashed = true;
                 onSearchRunningUpdated();
-                onNewResult(new SpotifyTopTracksSearchResult(artistId, countryCode, new ArrayList<SpotifyTopTracksSearchResult.Track>()));
+                onNewResult(new TracksSearchResult(artistId, countryCode, new ArrayList<de.devmil.nanodegree_spotifystreamer.data.Track>()));
             }
 
-            List<SpotifyTopTracksSearchResult.Track> resultTracks = new ArrayList<>();
+            List<de.devmil.nanodegree_spotifystreamer.data.Track> resultTracks = new ArrayList<>();
 
             if(tracks != null) {
                 for(Track t : tracks.tracks) {
@@ -172,7 +172,7 @@ public class SpotifyTopTracksSearch {
                     }
 
                     resultTracks.add(
-                        new SpotifyTopTracksSearchResult.Track(
+                        new de.devmil.nanodegree_spotifystreamer.data.Track(
                             trackId,
                             trackName,
                             previewUrl,
@@ -184,13 +184,13 @@ public class SpotifyTopTracksSearch {
                 }
             }
 
-            return new SpotifyTopTracksSearchResult(artistId, countryCode, resultTracks);
+            return new TracksSearchResult(artistId, countryCode, resultTracks);
         }
 
         @Override
-        protected void onPostExecute(SpotifyTopTracksSearchResult spotifyTopTracksSearchResult) {
-            if (spotifyTopTracksSearchResult != null) {
-                onNewResult(spotifyTopTracksSearchResult);
+        protected void onPostExecute(TracksSearchResult tracksSearchResult) {
+            if (tracksSearchResult != null) {
+                onNewResult(tracksSearchResult);
                 isFinished = true;
                 onSearchRunningUpdated();
             }

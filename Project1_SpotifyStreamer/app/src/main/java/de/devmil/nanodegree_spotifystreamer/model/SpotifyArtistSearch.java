@@ -5,7 +5,7 @@ import android.os.AsyncTask;
 import java.util.ArrayList;
 import java.util.List;
 
-import de.devmil.nanodegree_spotifystreamer.data.SpotifyArtistSearchResult;
+import de.devmil.nanodegree_spotifystreamer.data.ArtistSearchResult;
 import de.devmil.nanodegree_spotifystreamer.utils.ImageScoring;
 import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyService;
@@ -69,8 +69,8 @@ public class SpotifyArtistSearch {
         listeners.remove(listener);
     }
 
-    private SpotifyArtistSearchResult buildResult(String searchTerm, ArtistsPager artistsPager) {
-        ArrayList<SpotifyArtistSearchResult.Artist> artists = new ArrayList<>();
+    private ArtistSearchResult buildResult(String searchTerm, ArtistsPager artistsPager) {
+        ArrayList<de.devmil.nanodegree_spotifystreamer.data.Artist> artists = new ArrayList<>();
 
         List<Artist> spotifyArtists = null;
 
@@ -88,10 +88,10 @@ public class SpotifyArtistSearch {
                     imageUrl = getPreferredImage(a.images).url;
                 }
 
-                artists.add(new SpotifyArtistSearchResult.Artist(a.id, a.name, imageUrl));
+                artists.add(new de.devmil.nanodegree_spotifystreamer.data.Artist(a.id, a.name, imageUrl));
             }
         }
-        return new SpotifyArtistSearchResult(searchTerm, artists);
+        return new ArtistSearchResult(searchTerm, artists);
     }
 
     private Image getPreferredImage(List<Image> images) {
@@ -116,7 +116,7 @@ public class SpotifyArtistSearch {
         }
     }
 
-    private void onNewResult(SpotifyArtistSearchResult result)
+    private void onNewResult(ArtistSearchResult result)
     {
         for(SpotifyArtistSearchListener listener : listeners)
         {
@@ -125,7 +125,7 @@ public class SpotifyArtistSearch {
         }
     }
 
-    class ArtistSearchTask extends AsyncTask<String, Integer, SpotifyArtistSearchResult>
+    class ArtistSearchTask extends AsyncTask<String, Integer, ArtistSearchResult>
     {
         private SpotifyService service;
         private int delayMS;
@@ -151,7 +151,7 @@ public class SpotifyArtistSearch {
         }
 
         @Override
-        protected SpotifyArtistSearchResult doInBackground (String...params){
+        protected ArtistSearchResult doInBackground (String...params){
             onSearchRunningUpdated();
             try {
                 Thread.sleep(delayMS);
@@ -175,16 +175,16 @@ public class SpotifyArtistSearch {
                 {
                     isCrashed = true;
                     onSearchRunningUpdated();
-                    onNewResult(new SpotifyArtistSearchResult(searchTerm, new ArrayList<SpotifyArtistSearchResult.Artist>()));
+                    onNewResult(new ArtistSearchResult(searchTerm, new ArrayList<de.devmil.nanodegree_spotifystreamer.data.Artist>()));
                 }
             }
             return null;
         }
 
         @Override
-        protected void onPostExecute (SpotifyArtistSearchResult spotifyArtistSearchResult){
-            if (spotifyArtistSearchResult != null) {
-                onNewResult(spotifyArtistSearchResult);
+        protected void onPostExecute (ArtistSearchResult artistSearchResult){
+            if (artistSearchResult != null) {
+                onNewResult(artistSearchResult);
                 isFinished = true;
                 onSearchRunningUpdated();
             }
