@@ -4,11 +4,8 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.media.AudioManager;
-import android.media.MediaPlayer;
 import android.os.IBinder;
 import android.os.PersistableBundle;
-import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -17,17 +14,13 @@ import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-import com.squareup.picasso.Picasso;
-
-import java.io.IOException;
+import com.bumptech.glide.Glide;
 
 import de.devmil.nanodegree_spotifystreamer.data.PlayerData;
 import de.devmil.nanodegree_spotifystreamer.data.TracksSearchResult;
 import de.devmil.nanodegree_spotifystreamer.data.Track;
 import de.devmil.nanodegree_spotifystreamer.event.PlaybackNavigationOptionsChangedEvent;
-import de.devmil.nanodegree_spotifystreamer.event.PlaybackPositionChangedEvent;
-import de.devmil.nanodegree_spotifystreamer.event.PlaybackState;
-import de.devmil.nanodegree_spotifystreamer.event.PlaybackStateChangedEvent;
+import de.devmil.nanodegree_spotifystreamer.event.PlaybackDataChangedEvent;
 import de.devmil.nanodegree_spotifystreamer.event.PlaybackTrackChangedEvent;
 import de.devmil.nanodegree_spotifystreamer.service.MediaPlayService;
 import de.greenrobot.event.EventBus;
@@ -37,19 +30,17 @@ public class PlayerActivity extends AppCompatActivity {
     private static final String PARAM_SEARCH_RESULT = "PARAM_SEARCH_RESULT";
     private static final String PARAM_SELECTED_TRACK_INDEX = "PARAM_SELECTED_TRACK_INDEX";
     private static final String PARAM_ARTIST_NAME = "PARAM_ARTIST_NAME";
+    private static final String PARAM_ARTIST_ID = "PARAM_ARTIST_ID";
 
-    public static Intent createLaunchIntent(Context context, TracksSearchResult searchResult, int selectedTrackIndex, String artistName)
+    public static Intent createLaunchIntent(Context context, TracksSearchResult searchResult, int selectedTrackIndex, String artistName, String artistId)
     {
         Intent result = new Intent(context, PlayerActivity.class);
         result.putExtra(PARAM_SEARCH_RESULT, searchResult);
         result.putExtra(PARAM_SELECTED_TRACK_INDEX, selectedTrackIndex);
         result.putExtra(PARAM_ARTIST_NAME, artistName);
+        result.putExtra(PARAM_ARTIST_ID, artistId);
         return result;
     }
-
-    private TracksSearchResult searchResult;
-    private int selectedTrackIndex;
-    private String artistName;
 
     private TextView labelArtist;
     private TextView labelTitle;
@@ -74,9 +65,10 @@ public class PlayerActivity extends AppCompatActivity {
 
         Intent intent = getIntent();
 
-        selectedTrackIndex = intent.getIntExtra(PARAM_SELECTED_TRACK_INDEX, 0);
-        searchResult = intent.getParcelableExtra(PARAM_SEARCH_RESULT);
-        artistName = intent.getStringExtra(PARAM_ARTIST_NAME);
+        int paramSelectedTrackIndex = intent.getIntExtra(PARAM_SELECTED_TRACK_INDEX, 0);
+        TracksSearchResult paramSearchResult = intent.getParcelableExtra(PARAM_SEARCH_RESULT);
+        String paramArtistName = intent.getStringExtra(PARAM_ARTIST_NAME);
+        String paramArtistId = intent.getStringExtra(PARAM_ARTIST_ID);
 
         labelArtist = (TextView)findViewById(R.id.activity_player_label_artist);
         labelTitle = (TextView)findViewById(R.id.activity_player_label_title);
@@ -89,7 +81,6 @@ public class PlayerActivity extends AppCompatActivity {
         buttonPlayPause = (ImageButton)findViewById(R.id.activity_player_btn_play_pause);
         buttonNext = (ImageButton)findViewById(R.id.activity_player_btn_next);
 
-        labelArtist.setText(artistName);
         sliderPosition.setMax(0);
 
         sliderPosition.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -133,8 +124,6 @@ public class PlayerActivity extends AppCompatActivity {
             }
         });
 
-        setTrackData(searchResult.getTracks().get(selectedTrackIndex), selectedTrackIndex);
-
         if(savedInstanceState == null) {
             //TODO: do some fancy input animation?
         }
@@ -143,7 +132,15 @@ public class PlayerActivity extends AppCompatActivity {
             EventBus.getDefault().register(this);
         }
 
-        bindToMusicPlayService();
+        bindToMusicPlayService(paramArtistId, paramArtistName, paramSearchResult, paramSelectedTrackIndex);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if(EventBus.getDefault().isRegistered(this)) {
+            EventBus.getDefault().unregister(this);
+        }
     }
 
     @Override
@@ -171,18 +168,32 @@ public class PlayerActivity extends AppCompatActivity {
         MediaPlayService.executeCommand(this, MediaPlayService.COMMAND_TOGGLE_PLAY_PAUSE);
     }
 
-    private void setTrackData(Track track, int selectedTrackIndex) {
-        labelTitle.setText(track.getTrackName());
+    private void updateTrackData() {
+        if(serviceBinder == null) {
+            return;
+        }
+        Track selectedTrack = serviceBinder.getPlayerData().getActiveTrack();
+        if(selectedTrack == null) {
+            return;
+        }
 
-        if(track.getAlbumThumbnailLargeUrl() != null) {
-            Picasso.with(this).load(track.getAlbumThumbnailLargeUrl()).into(imageAlbum);
+        String artistName = serviceBinder.getPlayerData().getArtistName();
+
+        labelArtist.setText(artistName);
+        labelTitle.setText(selectedTrack.getTrackName());
+
+        if(selectedTrack.getAlbumThumbnailLargeUrl() != null) {
+            try {
+                Glide.with(this).load(selectedTrack.getAlbumThumbnailLargeUrl()).into(imageAlbum);
+            } catch(Exception e) {
+                e.printStackTrace();
+                imageAlbum.setImageDrawable(null);
+            }
         } else {
             imageAlbum.setImageDrawable(null);
         }
 
-        labelAlbum.setText(track.getAlbumName());
-
-        this.selectedTrackIndex = selectedTrackIndex;
+        labelAlbum.setText(selectedTrack.getAlbumName());
     }
 
     private void setImageButtonEnabled(ImageButton button, boolean enabled) {
@@ -200,7 +211,7 @@ public class PlayerActivity extends AppCompatActivity {
         return String.format("%02d:%02d", minutes, seconds);
     }
 
-    private void bindToMusicPlayService() {
+    private void bindToMusicPlayService(final String paramArtistId, final String paramArtistName, final TracksSearchResult paramSearchResult, final int paramSelectedTrackIndex) {
         if(serviceConnection != null) {
             return;
         }
@@ -208,8 +219,14 @@ public class PlayerActivity extends AppCompatActivity {
         serviceConnection = new ServiceConnection() {
             @Override
             public void onServiceConnected(ComponentName name, IBinder service) {
+                PlayerData newPlayerData = new PlayerData(paramArtistId, paramArtistName, paramSearchResult.getTracks(), paramSelectedTrackIndex);
+
                 serviceBinder = (MediaPlayService.MediaPlayBinder)service;
-                serviceBinder.setPlayerData(new PlayerData(artistName, searchResult.getTracks(), selectedTrackIndex));
+                PlayerData servicePlayerData = serviceBinder.getPlayerData();
+                if(servicePlayerData == null
+                        || newPlayerData.getArtistId() != servicePlayerData.getArtistId()) {
+                    serviceBinder.setPlayerData(newPlayerData);
+                }
             }
 
             @Override
@@ -237,7 +254,14 @@ public class PlayerActivity extends AppCompatActivity {
 
     @Override
     protected void onResume() {
-        bindToMusicPlayService();
+        Intent intent = getIntent();
+
+        int paramSelectedTrackIndex = intent.getIntExtra(PARAM_SELECTED_TRACK_INDEX, 0);
+        TracksSearchResult paramSearchResult = intent.getParcelableExtra(PARAM_SEARCH_RESULT);
+        String paramArtistName = intent.getStringExtra(PARAM_ARTIST_NAME);
+        String paramArtistId = intent.getStringExtra(PARAM_ARTIST_ID);
+
+        bindToMusicPlayService(paramArtistId, paramArtistName, paramSearchResult, paramSelectedTrackIndex);
         super.onResume();
     }
 
@@ -246,18 +270,24 @@ public class PlayerActivity extends AppCompatActivity {
         setImageButtonEnabled(buttonPrev, e.isCanNavigatePrev());
     }
 
-    public void onEventMainThread(PlaybackPositionChangedEvent e) {
-        labelPlayed.setText(formatDurationString(e.getPositionMS()));
-        labelDuration.setText(formatDurationString(e.getDurationMS()));
-    }
+    public void onEventMainThread(PlaybackDataChangedEvent e) {
+        if(!e.isReady()) {
+            labelPlayed.setText("");
+            labelDuration.setText("");
 
-    public void onEventMainThread(PlaybackStateChangedEvent e) {
-        int newState = e.getNewState();
-        boolean canPlay = newState > PlaybackState.INIT;
-        setImageButtonEnabled(buttonPlayPause, canPlay);
+        } else {
+            labelDuration.setText(formatDurationString(e.getDurationMS()));
+            sliderPosition.setMax(e.getDurationMS());
+            if(!userSlideMode) {
+                labelPlayed.setText(formatDurationString(e.getPositionMS()));
+                sliderPosition.setProgress(e.getPositionMS());
+            }
+        }
+        sliderPosition.setEnabled(e.isReady());
+        setImageButtonEnabled(buttonPlayPause, e.isReady());
     }
 
     public void onEventMainThread(PlaybackTrackChangedEvent e) {
-        setTrackData(e.getNewTrack(), e.getNewIndex());
+        updateTrackData();
     }
 }

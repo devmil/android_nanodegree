@@ -15,7 +15,7 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.squareup.picasso.Picasso;
+import com.bumptech.glide.Glide;
 
 import java.util.Locale;
 
@@ -58,7 +58,7 @@ public class ArtistTop10TracksActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_artist_top10_tracks);
 
-        String artistId = getIntent().getStringExtra(PARAM_ARTIST_ID);
+        final String artistId = getIntent().getStringExtra(PARAM_ARTIST_ID);
         final String artistName = getIntent().getStringExtra(PARAM_ARTIST_NAME);
 
         //noinspection ConstantConditions
@@ -77,7 +77,7 @@ public class ArtistTop10TracksActivity extends AppCompatActivity {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 TracksSearchResult searchResult = resultAdapter.getCurrentResult();
                 if(searchResult != null) {
-                    startActivity(PlayerActivity.createLaunchIntent(ArtistTop10TracksActivity.this, searchResult, position, artistName));
+                    startActivity(PlayerActivity.createLaunchIntent(ArtistTop10TracksActivity.this, searchResult, position, artistName, artistId));
                 }
             }
         });
@@ -278,7 +278,7 @@ public class ArtistTop10TracksActivity extends AppCompatActivity {
 
             if(imageUrlToLoad != null)
             {
-                Picasso.with(context).load(imageUrlToLoad).into(viewHolder.ivTrack);
+                Glide.with(context).load(imageUrlToLoad).into(viewHolder.ivTrack);
             }
             else
             {

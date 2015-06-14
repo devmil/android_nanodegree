@@ -8,16 +8,19 @@ import java.util.List;
 
 public class PlayerData implements Parcelable {
     private List<Track> tracks;
+    private String artistId;
     private String artistName;
     private int activeTrackIndex;
 
-    public PlayerData(String artistName, List<Track> tracks, int initialActiveTrackIndex) {
+    public PlayerData(String artistId, String artistName, List<Track> tracks, int initialActiveTrackIndex) {
+        this.artistId = artistId;
         this.artistName = artistName;
         this.tracks = new ArrayList<>(tracks);
         this.activeTrackIndex = initialActiveTrackIndex;
     }
 
     public PlayerData(Parcel source) {
+        this.artistId = source.readString();
         this.artistName = source.readString();
         this.tracks = source.createTypedArrayList(Track.CREATOR);
         this.activeTrackIndex = source.readInt();
@@ -25,6 +28,10 @@ public class PlayerData implements Parcelable {
 
     public List<Track> getTracks() {
         return tracks;
+    }
+
+    public String getArtistId() {
+        return artistId;
     }
 
     public String getArtistName() {
@@ -73,6 +80,7 @@ public class PlayerData implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(artistId);
         dest.writeString(artistName);
         dest.writeTypedList(tracks);
         dest.writeInt(activeTrackIndex);

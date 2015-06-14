@@ -20,7 +20,8 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.squareup.picasso.Picasso;
+
+import com.bumptech.glide.Glide;
 
 import de.devmil.nanodegree_spotifystreamer.data.Artist;
 import de.devmil.nanodegree_spotifystreamer.data.ArtistSearchResult;
@@ -314,7 +315,7 @@ public class MainActivity extends AppCompatActivity {
 
             if(imageUrlToLoad != null)
             {
-                Picasso.with(context).load(imageUrlToLoad).into(viewHolder.ivArtist);
+                Glide.with(context).load(imageUrlToLoad).into(viewHolder.ivArtist);
             }
             else
             {
