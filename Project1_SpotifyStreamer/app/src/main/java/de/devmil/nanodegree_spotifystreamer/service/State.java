@@ -24,7 +24,7 @@ interface State {
 
     void onEnter();
 
-    void onLeave();
+    void onLeave(@ID int newState);
 
     void onPlay();
 

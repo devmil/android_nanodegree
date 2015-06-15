@@ -27,18 +27,9 @@ import de.greenrobot.event.EventBus;
 
 public class PlayerActivity extends AppCompatActivity {
 
-    private static final String PARAM_SEARCH_RESULT = "PARAM_SEARCH_RESULT";
-    private static final String PARAM_SELECTED_TRACK_INDEX = "PARAM_SELECTED_TRACK_INDEX";
-    private static final String PARAM_ARTIST_NAME = "PARAM_ARTIST_NAME";
-    private static final String PARAM_ARTIST_ID = "PARAM_ARTIST_ID";
-
-    public static Intent createLaunchIntent(Context context, TracksSearchResult searchResult, int selectedTrackIndex, String artistName, String artistId)
+    public static Intent createLaunchIntent(Context context)
     {
         Intent result = new Intent(context, PlayerActivity.class);
-        result.putExtra(PARAM_SEARCH_RESULT, searchResult);
-        result.putExtra(PARAM_SELECTED_TRACK_INDEX, selectedTrackIndex);
-        result.putExtra(PARAM_ARTIST_NAME, artistName);
-        result.putExtra(PARAM_ARTIST_ID, artistId);
         return result;
     }
 
@@ -62,13 +53,6 @@ public class PlayerActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_player);
-
-        Intent intent = getIntent();
-
-        int paramSelectedTrackIndex = intent.getIntExtra(PARAM_SELECTED_TRACK_INDEX, 0);
-        TracksSearchResult paramSearchResult = intent.getParcelableExtra(PARAM_SEARCH_RESULT);
-        String paramArtistName = intent.getStringExtra(PARAM_ARTIST_NAME);
-        String paramArtistId = intent.getStringExtra(PARAM_ARTIST_ID);
 
         labelArtist = (TextView)findViewById(R.id.activity_player_label_artist);
         labelTitle = (TextView)findViewById(R.id.activity_player_label_title);
@@ -132,7 +116,7 @@ public class PlayerActivity extends AppCompatActivity {
             EventBus.getDefault().register(this);
         }
 
-        bindToMusicPlayService(paramArtistId, paramArtistName, paramSearchResult, paramSelectedTrackIndex);
+        startService(MediaPlayService.createStartIntent(this));
     }
 
     @Override
@@ -211,22 +195,16 @@ public class PlayerActivity extends AppCompatActivity {
         return String.format("%02d:%02d", minutes, seconds);
     }
 
-    private void bindToMusicPlayService(final String paramArtistId, final String paramArtistName, final TracksSearchResult paramSearchResult, final int paramSelectedTrackIndex) {
+    private void bindToMusicPlayService() {
         if(serviceConnection != null) {
             return;
         }
-        Intent serviceStartIntent = new Intent(this, MediaPlayService.class);
+        Intent serviceStartIntent = MediaPlayService.createStartIntent(this);
         serviceConnection = new ServiceConnection() {
             @Override
             public void onServiceConnected(ComponentName name, IBinder service) {
-                PlayerData newPlayerData = new PlayerData(paramArtistId, paramArtistName, paramSearchResult.getTracks(), paramSelectedTrackIndex);
-
                 serviceBinder = (MediaPlayService.MediaPlayBinder)service;
-                PlayerData servicePlayerData = serviceBinder.getPlayerData();
-                if(servicePlayerData == null
-                        || newPlayerData.getArtistId() != servicePlayerData.getArtistId()) {
-                    serviceBinder.setPlayerData(newPlayerData);
-                }
+                serviceBinder.onBound();
             }
 
             @Override
@@ -234,13 +212,14 @@ public class PlayerActivity extends AppCompatActivity {
                 serviceBinder = null;
             }
         };
-        bindService(serviceStartIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+        bindService(serviceStartIntent, serviceConnection, 0);
     }
 
     private void unbindFromMusicPlayService() {
         if(serviceConnection == null) {
             return;
         }
+        serviceBinder.beforeUnbind();
         unbindService(serviceConnection);
         serviceBinder = null;
         serviceConnection = null;
@@ -254,14 +233,7 @@ public class PlayerActivity extends AppCompatActivity {
 
     @Override
     protected void onResume() {
-        Intent intent = getIntent();
-
-        int paramSelectedTrackIndex = intent.getIntExtra(PARAM_SELECTED_TRACK_INDEX, 0);
-        TracksSearchResult paramSearchResult = intent.getParcelableExtra(PARAM_SEARCH_RESULT);
-        String paramArtistName = intent.getStringExtra(PARAM_ARTIST_NAME);
-        String paramArtistId = intent.getStringExtra(PARAM_ARTIST_ID);
-
-        bindToMusicPlayService(paramArtistId, paramArtistName, paramSearchResult, paramSelectedTrackIndex);
+        bindToMusicPlayService();
         super.onResume();
     }
 

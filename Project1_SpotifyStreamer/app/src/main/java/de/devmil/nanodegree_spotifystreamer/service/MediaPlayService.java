@@ -1,12 +1,21 @@
 package de.devmil.nanodegree_spotifystreamer.service;
 
 import android.app.IntentService;
+import android.app.Notification;
+import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.media.MediaPlayer;
+import android.os.AsyncTask;
 import android.os.Binder;
+import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.IntDef;
+
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.animation.GlideAnimation;
+import com.bumptech.glide.request.target.SimpleTarget;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -15,8 +24,8 @@ import java.util.TimerTask;
 
 import de.devmil.nanodegree_spotifystreamer.data.PlayerData;
 import de.devmil.nanodegree_spotifystreamer.data.Track;
-import de.devmil.nanodegree_spotifystreamer.event.PlaybackNavigationOptionsChangedEvent;
 import de.devmil.nanodegree_spotifystreamer.event.PlaybackDataChangedEvent;
+import de.devmil.nanodegree_spotifystreamer.event.PlaybackNavigationOptionsChangedEvent;
 import de.devmil.nanodegree_spotifystreamer.event.PlaybackTrackChangedEvent;
 import de.greenrobot.event.EventBus;
 
@@ -25,7 +34,7 @@ import de.greenrobot.event.EventBus;
  * It also is the owner of the currently active playlist so the activity binds to it and
  * listens for events to get the latest and greatest data and status updates
  */
-public class MediaPlayService extends IntentService implements MediaPlayer.OnCompletionListener, MediaPlayer.OnPreparedListener {
+public class MediaPlayService extends Service implements MediaPlayer.OnCompletionListener, MediaPlayer.OnPreparedListener {
 
     private static final String ACTION_PLAY = "ACTION_PLAY";
     private static final String ACTION_PAUSE = "ACTION_PAUSE";
@@ -52,6 +61,11 @@ public class MediaPlayService extends IntentService implements MediaPlayer.OnCom
      * @param command
      */
     public static void executeCommand(Context context, @Command int command) {
+
+        context.startService(createCommandIntent(context, command));
+    }
+
+    public static Intent createCommandIntent(Context context, @Command int command) {
         String action = "";
         switch(command) {
             case COMMAND_PLAY:
@@ -73,21 +87,24 @@ public class MediaPlayService extends IntentService implements MediaPlayer.OnCom
                 action = ACTION_TOGGLE_PLAY_PAUSE;
                 break;
         }
-        Intent intent = new Intent(context, MediaPlayService.class);
+        Intent intent = createStartIntent(context);
         intent.setAction(action);
-        context.startService(intent);
+        return intent;
+    }
+
+    public static Intent createStartIntent(Context context) {
+        Intent intent = new Intent(context, MediaPlayService.class);
+        return intent;
     }
 
     private static final long DURATION_UPDATE_DELAY_MS = 300;
 
     private boolean isStartPlayingIntended = false;
+    private boolean isServiceBound = false;
+    private boolean isStopped = false;
     private State currentState = null;
     private MediaPlayerWrapper mediaPlayer;
     private PlayerData playerData;
-
-    public MediaPlayService() {
-        super("MediaPlayService");
-    }
 
     /**
      * The binder for the activity <-> service communication
@@ -108,6 +125,31 @@ public class MediaPlayService extends IntentService implements MediaPlayer.OnCom
                 return true;
             }
             return false;
+        }
+
+        public void onBound() {
+            PlayerNotification.cancel(MediaPlayService.this);
+            hideNotification();
+            isServiceBound = true;
+            isStopped = false;
+            if(playerData != null) {
+                fireCurrentMediaPlayerPositions();
+                fireCurrentNavigationOptionsChanged();
+                fireTrackChangedEvent(playerData.getActiveTrackIndex(), playerData.getActiveTrackIndex(), playerData.getActiveTrack());
+            }
+        }
+
+        public void beforeUnbind() {
+            isServiceBound = false;
+            isStopped = false;
+            if(currentState != null) {
+                boolean isPlay = currentState.getId() == State.PLAYING;
+                boolean isPaused = currentState.getId() == State.PAUSED;
+
+                if(isPlay || isPaused) {
+                    showNotification(isPlay);
+                }
+            }
         }
     }
 
@@ -137,24 +179,8 @@ public class MediaPlayService extends IntentService implements MediaPlayer.OnCom
     }
 
     @Override
-    public IBinder onBind(Intent intent) {
-        return new MediaPlayBinder();
-    }
-
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        traverseTo(State.INIT);
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        removeMediaPlayer();
-    }
-
-    @Override
-    protected void onHandleIntent(Intent intent) {
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        super.onStartCommand(intent, flags, startId);
         String action = intent.getAction();
         if(ACTION_NEXT.equals(action)) {
             doNext();
@@ -169,6 +195,7 @@ public class MediaPlayService extends IntentService implements MediaPlayer.OnCom
                 currentState.onPlay();
             }
         } else if(ACTION_STOP.equals(action)) {
+            isStopped = true;
             if(currentState != null) {
                 currentState.onStop();
             }
@@ -181,6 +208,31 @@ public class MediaPlayService extends IntentService implements MediaPlayer.OnCom
                 }
             }
         }
+
+        return START_STICKY;
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        return new MediaPlayBinder();
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        traverseTo(State.INIT);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        removeMediaPlayer();
+        if(currentState != null) {
+            currentState.onLeave(State.INIT);
+            currentState = null;
+        }
+        PlayerNotification.cancel(MediaPlayService.this);
+        stopForeground(true);
     }
 
     private String getCurrentUrl() {
@@ -288,7 +340,7 @@ public class MediaPlayService extends IntentService implements MediaPlayer.OnCom
             return;
         State state = createState(stateId);
         if(currentState != null) {
-            currentState.onLeave();
+            currentState.onLeave(stateId);
         }
         currentState = state;
         if(currentState != null) {
@@ -310,6 +362,67 @@ public class MediaPlayService extends IntentService implements MediaPlayer.OnCom
                 return new StateFinished();
         }
         return null;
+    }
+
+    private AsyncTask<Object, Object, Object> imageLoadingTask;
+
+    private void showNotification(final boolean currentlyPlaying) {
+
+        if(isServiceBound)
+            return;
+
+        final String albumImageUri = playerData.getActiveTrack().getAlbumThumbnailLargeUrl();
+
+        if(imageLoadingTask != null) {
+            imageLoadingTask.cancel(true);
+        }
+
+        imageLoadingTask = new AsyncTask<Object, Object, Object>() {
+            @Override
+            protected Object doInBackground(Object... params) {
+                new Handler(MediaPlayService.this.getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Glide.with(MediaPlayService.this).load(albumImageUri).asBitmap().dontAnimate().into(new SimpleTarget<Bitmap>() {
+                            @Override
+                            public void onResourceReady(Bitmap resource, GlideAnimation<? super Bitmap> glideAnimation) {
+                                if(!isCancelled()) {
+                                    showNotification(resource, currentlyPlaying, false);
+                                }
+                            }
+                        });
+                    }
+                });
+                return null;
+            }
+        };
+
+//        showNotification(null, currentlyPlaying, true);
+
+        imageLoadingTask.execute();
+    }
+
+    private void hideNotification() {
+        if(imageLoadingTask != null) {
+            imageLoadingTask.cancel(true);
+        }
+        PlayerNotification.cancel(this);
+    }
+
+    private void showNotification(Bitmap albumArtBitmap, boolean currentlyPlaying, boolean bindToNotification) {
+        if(playerData == null
+                || playerData.getActiveTrack() == null) {
+            return;
+        }
+
+        String artistName = playerData.getArtistName();
+        String trackName = playerData.getActiveTrack().getTrackName();
+
+        Notification notification = PlayerNotification.notify(this, artistName, trackName, albumArtBitmap, currentlyPlaying);
+
+        if(bindToNotification) {
+            startForeground(PlayerNotification.NOTIFICATION_ID_STICKY, notification);
+        }
     }
 
     class StateInit extends StateBase {
@@ -350,10 +463,13 @@ public class MediaPlayService extends IntentService implements MediaPlayer.OnCom
         public void onEnter() {
             super.onEnter();
             ensureMediaPlayer();
+            mediaPlayer.stop();
             mediaPlayer.setUrl(getCurrentUrl());
             if(isStartPlayingIntended) {
                 isStartPlayingIntended = false;
                 traverseTo(State.PLAYING);
+            } else if(!isStopped) {
+                showNotification(false);
             }
         }
 
@@ -367,11 +483,18 @@ public class MediaPlayService extends IntentService implements MediaPlayer.OnCom
             super.onPlay();
             traverseTo(State.PLAYING);
         }
+
+        @Override
+        public void onActiveTrackIndexChanged() {
+            super.onActiveTrackIndexChanged();
+            showNotification(false);
+        }
     }
 
     class StatePlaying extends StateBase {
 
         private Timer updateDurationTimer;
+        private AsyncTask<Object, Object, Object> imageLoadingTask;
 
         public StatePlaying() {
             updateDurationTimer = new Timer("update duration timer");
@@ -389,12 +512,16 @@ public class MediaPlayService extends IntentService implements MediaPlayer.OnCom
                     }
                 }
             }, 0, DURATION_UPDATE_DELAY_MS);
+            showNotification(true);
         }
 
         @Override
-        public void onLeave() {
-            super.onLeave();
+        public void onLeave(@ID int newState) {
+            super.onLeave(newState);
             updateDurationTimer.cancel();
+            if(imageLoadingTask != null) {
+                imageLoadingTask.cancel(true);
+            }
         }
 
         @Override
@@ -446,6 +573,15 @@ public class MediaPlayService extends IntentService implements MediaPlayer.OnCom
         public void onEnter() {
             super.onEnter();
             mediaPlayer.pause();
+            showNotification(false);
+        }
+
+        @Override
+        public void onLeave(@ID int newState) {
+            super.onLeave(newState);
+            if(imageLoadingTask != null) {
+                imageLoadingTask.cancel(true);
+            }
         }
 
         @Override

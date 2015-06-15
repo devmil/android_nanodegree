@@ -10,7 +10,7 @@ abstract class StateBase implements State {
     public void onEnter() {}
 
     @Override
-    public void onLeave() {}
+    public void onLeave(@ID int newState) {}
 
     @Override
     public void onPlay() {}
