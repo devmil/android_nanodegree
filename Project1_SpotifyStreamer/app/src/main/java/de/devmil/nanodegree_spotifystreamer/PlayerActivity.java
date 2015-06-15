@@ -205,6 +205,7 @@ public class PlayerActivity extends AppCompatActivity {
             public void onServiceConnected(ComponentName name, IBinder service) {
                 serviceBinder = (MediaPlayService.MediaPlayBinder)service;
                 serviceBinder.onBound();
+                serviceBinder.fireInitialEvents();
             }
 
             @Override

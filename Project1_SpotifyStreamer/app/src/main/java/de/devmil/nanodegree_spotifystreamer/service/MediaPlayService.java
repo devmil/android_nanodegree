@@ -1,6 +1,5 @@
 package de.devmil.nanodegree_spotifystreamer.service;
 
-import android.app.IntentService;
 import android.app.Notification;
 import android.app.Service;
 import android.content.Context;
@@ -132,6 +131,9 @@ public class MediaPlayService extends Service implements MediaPlayer.OnCompletio
             hideNotification();
             isServiceBound = true;
             isStopped = false;
+        }
+
+        public void fireInitialEvents() {
             if(playerData != null) {
                 fireCurrentMediaPlayerPositions();
                 fireCurrentNavigationOptionsChanged();
@@ -181,30 +183,33 @@ public class MediaPlayService extends Service implements MediaPlayer.OnCompletio
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
-        String action = intent.getAction();
-        if(ACTION_NEXT.equals(action)) {
-            doNext();
-        } else if(ACTION_PREV.equals(action)) {
-            doPrev();
-        } else if(ACTION_PAUSE.equals(action)) {
-            if(currentState != null) {
-                currentState.onPause();
-            }
-        } else if(ACTION_PLAY.equals(action)) {
-            if(currentState != null) {
-                currentState.onPlay();
-            }
-        } else if(ACTION_STOP.equals(action)) {
-            isStopped = true;
-            if(currentState != null) {
-                currentState.onStop();
-            }
-        } else if(ACTION_TOGGLE_PLAY_PAUSE.equals(action)) {
-            if(currentState != null) {
-                if(currentState.getId() == State.PLAYING) {
+        if(intent != null
+                && intent.getAction() != null) {
+            String action = intent.getAction();
+            if (ACTION_NEXT.equals(action)) {
+                doNext();
+            } else if (ACTION_PREV.equals(action)) {
+                doPrev();
+            } else if (ACTION_PAUSE.equals(action)) {
+                if (currentState != null) {
                     currentState.onPause();
-                } else {
+                }
+            } else if (ACTION_PLAY.equals(action)) {
+                if (currentState != null) {
                     currentState.onPlay();
+                }
+            } else if (ACTION_STOP.equals(action)) {
+                isStopped = true;
+                if (currentState != null) {
+                    currentState.onStop();
+                }
+            } else if (ACTION_TOGGLE_PLAY_PAUSE.equals(action)) {
+                if (currentState != null) {
+                    if (currentState.getId() == State.PLAYING) {
+                        currentState.onPause();
+                    } else {
+                        currentState.onPlay();
+                    }
                 }
             }
         }
@@ -396,8 +401,6 @@ public class MediaPlayService extends Service implements MediaPlayer.OnCompletio
                 return null;
             }
         };
-
-//        showNotification(null, currentlyPlaying, true);
 
         imageLoadingTask.execute();
     }
