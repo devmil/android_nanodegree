@@ -21,6 +21,7 @@ import de.devmil.nanodegree_spotifystreamer.data.TracksSearchResult;
 import de.devmil.nanodegree_spotifystreamer.data.Track;
 import de.devmil.nanodegree_spotifystreamer.event.PlaybackNavigationOptionsChangedEvent;
 import de.devmil.nanodegree_spotifystreamer.event.PlaybackDataChangedEvent;
+import de.devmil.nanodegree_spotifystreamer.event.PlaybackPlayingStateChanged;
 import de.devmil.nanodegree_spotifystreamer.event.PlaybackTrackChangedEvent;
 import de.devmil.nanodegree_spotifystreamer.service.MediaPlayService;
 import de.greenrobot.event.EventBus;
@@ -156,12 +157,12 @@ public class PlayerActivity extends AppCompatActivity {
         if(serviceBinder == null) {
             return;
         }
-        Track selectedTrack = serviceBinder.getPlayerData().getActiveTrack();
+        Track selectedTrack = serviceBinder.getActiveTrack();
         if(selectedTrack == null) {
             return;
         }
 
-        String artistName = serviceBinder.getPlayerData().getArtistName();
+        String artistName = serviceBinder.getArtistName();
 
         labelArtist.setText(artistName);
         labelTitle.setText(selectedTrack.getTrackName());
@@ -184,6 +185,10 @@ public class PlayerActivity extends AppCompatActivity {
         button.setEnabled(enabled);
         button.setClickable(enabled);
         button.setAlpha(enabled ? 1.0f : 0.5f);
+    }
+
+    private void updatePlayPauseButton(boolean currentlyPlaying) {
+        buttonPlayPause.setImageResource(currentlyPlaying ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play);
     }
 
     private String formatDurationString(int durationMS) {
@@ -262,5 +267,9 @@ public class PlayerActivity extends AppCompatActivity {
 
     public void onEventMainThread(PlaybackTrackChangedEvent e) {
         updateTrackData();
+    }
+
+    public void onEventMainThread(PlaybackPlayingStateChanged e) {
+        updatePlayPauseButton(e.isPlaying());
     }
 }

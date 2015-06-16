@@ -68,10 +68,6 @@ public class MediaPlayerWrapper implements MediaPlayer.OnCompletionListener, Med
         return hasError;
     }
 
-    public String getUrl() {
-        return currentUrl;
-    }
-
     public void play() {
         state = STATE_PLAYING;
         if(isPrepared) {

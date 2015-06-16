@@ -2,10 +2,10 @@ package de.devmil.nanodegree_spotifystreamer.service;
 
 import android.app.Notification;
 import android.app.Service;
+import android.app.usage.UsageEvents;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Handler;
@@ -18,13 +18,12 @@ import com.bumptech.glide.request.target.SimpleTarget;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import de.devmil.nanodegree_spotifystreamer.data.PlayerData;
 import de.devmil.nanodegree_spotifystreamer.data.Track;
 import de.devmil.nanodegree_spotifystreamer.event.PlaybackDataChangedEvent;
 import de.devmil.nanodegree_spotifystreamer.event.PlaybackNavigationOptionsChangedEvent;
+import de.devmil.nanodegree_spotifystreamer.event.PlaybackPlayingStateChanged;
 import de.devmil.nanodegree_spotifystreamer.event.PlaybackTrackChangedEvent;
 import de.greenrobot.event.EventBus;
 
@@ -33,7 +32,7 @@ import de.greenrobot.event.EventBus;
  * It also is the owner of the currently active playlist so the activity binds to it and
  * listens for events to get the latest and greatest data and status updates
  */
-public class MediaPlayService extends Service implements MediaPlayer.OnCompletionListener, MediaPlayer.OnPreparedListener {
+public class MediaPlayService extends Service implements TracksPlayerListener {
 
     private static final String ACTION_PLAY = "ACTION_PLAY";
     private static final String ACTION_PAUSE = "ACTION_PAUSE";
@@ -41,6 +40,38 @@ public class MediaPlayService extends Service implements MediaPlayer.OnCompletio
     private static final String ACTION_PREV = "ACTION_PREV";
     private static final String ACTION_NEXT = "ACTION_NEXT";
     private static final String ACTION_TOGGLE_PLAY_PAUSE = "ACTION_TOGGLE_PLAY_PAUSE";
+
+    @Override
+    public void onCurrentTrackChanged(int oldIndex, int newIndex) {
+        fireTrackChangedEvent(oldIndex, newIndex);
+        updateNotification();
+    }
+
+    @Override
+    public void onNavigationOptionsChanged() {
+        if(tracksPlayer != null) {
+            EventBus.getDefault().post(new PlaybackNavigationOptionsChangedEvent(tracksPlayer.getActiveTrackIndex(), tracksPlayer.canNavigatePrev(), tracksPlayer.canNavigateNext()));
+        }
+    }
+
+    @Override
+    public void onPositionChanged() {
+        fireCurrentMediaPlayerPositions();
+    }
+
+    @Override
+    public void onPrepared() {
+        fireCurrentMediaPlayerPositions();
+    }
+
+    @Override
+    public void onStateChanged(@State.ID int oldState, @State.ID int newState) {
+        if(oldState == State.PLAYING
+                || newState == State.PLAYING) {
+            firePlayingStateChanged();
+        }
+        updateNotification();
+    }
 
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({ COMMAND_NEXT, COMMAND_PAUSE, COMMAND_PREV, COMMAND_STOP, COMMAND_PLAY, COMMAND_TOGGLE_PLAY_PAUSE })
@@ -56,8 +87,8 @@ public class MediaPlayService extends Service implements MediaPlayer.OnCompletio
     /**
      * this is a convenient method for all clients wanting to send commands to this service.
      * It creates an Intent, fills it appropriately and sends it to the service.
-     * @param context
-     * @param command
+     * @param context Context
+     * @param command Command to be executed
      */
     public static void executeCommand(Context context, @Command int command) {
 
@@ -92,35 +123,35 @@ public class MediaPlayService extends Service implements MediaPlayer.OnCompletio
     }
 
     public static Intent createStartIntent(Context context) {
-        Intent intent = new Intent(context, MediaPlayService.class);
-        return intent;
+        return new Intent(context, MediaPlayService.class);
     }
 
-    private static final long DURATION_UPDATE_DELAY_MS = 300;
-
-    private boolean isStartPlayingIntended = false;
     private boolean isServiceBound = false;
     private boolean isStopped = false;
-    private State currentState = null;
-    private MediaPlayerWrapper mediaPlayer;
-    private PlayerData playerData;
+    private TracksPlayer tracksPlayer;
 
     /**
      * The binder for the activity <-> service communication
      */
     public class MediaPlayBinder extends Binder
     {
-        public void setPlayerData(PlayerData data) {
-            updatePlayerData(data);
+        public void setPlayerData(PlayerData data)  {
+            if(tracksPlayer != null) {
+                tracksPlayer.updatePlayerData(data);
+            }
         }
 
-        public PlayerData getPlayerData() {
-            return playerData;
+        public String getArtistName() {
+            return tracksPlayer == null ? null : tracksPlayer.getArtistName();
+        }
+
+        public Track getActiveTrack() {
+            return tracksPlayer == null ? null : tracksPlayer.getActiveTrack();
         }
 
         public boolean seekTo(int ms) {
-            if(currentState != null) {
-                currentState.seekTo(ms);
+            if(tracksPlayer != null) {
+                tracksPlayer.doSeekTo(ms);
                 return true;
             }
             return false;
@@ -134,50 +165,26 @@ public class MediaPlayService extends Service implements MediaPlayer.OnCompletio
         }
 
         public void fireInitialEvents() {
-            if(playerData != null) {
+            if(tracksPlayer != null) {
                 fireCurrentMediaPlayerPositions();
                 fireCurrentNavigationOptionsChanged();
-                fireTrackChangedEvent(playerData.getActiveTrackIndex(), playerData.getActiveTrackIndex(), playerData.getActiveTrack());
+                fireTrackChangedEvent(tracksPlayer.getActiveTrackIndex(), tracksPlayer.getActiveTrackIndex());
+                firePlayingStateChanged();
             }
         }
 
         public void beforeUnbind() {
             isServiceBound = false;
             isStopped = false;
-            if(currentState != null) {
-                boolean isPlay = currentState.getId() == State.PLAYING;
-                boolean isPaused = currentState.getId() == State.PAUSED;
+            if(tracksPlayer != null) {
+                boolean isPlay = tracksPlayer.isPlaying();
+                boolean isPaused = tracksPlayer.isPaused();
 
                 if(isPlay || isPaused) {
                     showNotification(isPlay);
                 }
             }
         }
-    }
-
-    /**
-     * updates the PlayerData with the given new PlayerData.
-     * This method also fires the appropriate events
-     * @param playerData
-     */
-    private void updatePlayerData(PlayerData playerData) {
-        int oldIndex = -1;
-        int activeTrackIndex = -1;
-        Track activeTrack = null;
-        if(this.playerData != null) {
-            oldIndex = this.playerData.getActiveTrackIndex();
-        }
-        if(playerData != null) {
-            activeTrackIndex = playerData.getActiveTrackIndex();
-            activeTrack = playerData.getActiveTrack();
-        }
-        this.playerData = playerData;
-        if(currentState != null) {
-            currentState.onMetadataChanged();
-        }
-        fireCurrentNavigationOptionsChanged();
-        fireTrackChangedEvent(oldIndex, activeTrackIndex, activeTrack);
-        fireCurrentMediaPlayerPositions();
     }
 
     @Override
@@ -187,30 +194,18 @@ public class MediaPlayService extends Service implements MediaPlayer.OnCompletio
                 && intent.getAction() != null) {
             String action = intent.getAction();
             if (ACTION_NEXT.equals(action)) {
-                doNext();
+                tracksPlayer.next();
             } else if (ACTION_PREV.equals(action)) {
-                doPrev();
+                tracksPlayer.prev();
             } else if (ACTION_PAUSE.equals(action)) {
-                if (currentState != null) {
-                    currentState.onPause();
-                }
+                tracksPlayer.pause();
             } else if (ACTION_PLAY.equals(action)) {
-                if (currentState != null) {
-                    currentState.onPlay();
-                }
+                tracksPlayer.play();
             } else if (ACTION_STOP.equals(action)) {
                 isStopped = true;
-                if (currentState != null) {
-                    currentState.onStop();
-                }
+                tracksPlayer.stop();
             } else if (ACTION_TOGGLE_PLAY_PAUSE.equals(action)) {
-                if (currentState != null) {
-                    if (currentState.getId() == State.PLAYING) {
-                        currentState.onPause();
-                    } else {
-                        currentState.onPlay();
-                    }
-                }
+                tracksPlayer.togglePlayPause();
             }
         }
 
@@ -225,148 +220,63 @@ public class MediaPlayService extends Service implements MediaPlayer.OnCompletio
     @Override
     public void onCreate() {
         super.onCreate();
-        traverseTo(State.INIT);
+        tracksPlayer = new TracksPlayer();
+        tracksPlayer.setListener(this);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        removeMediaPlayer();
-        if(currentState != null) {
-            currentState.onLeave(State.INIT);
-            currentState = null;
-        }
+        tracksPlayer.release();
+        tracksPlayer.setListener(null);
         PlayerNotification.cancel(MediaPlayService.this);
         stopForeground(true);
     }
 
-    private String getCurrentUrl() {
-        if(playerData == null) {
-            return null;
-        }
-        Track track = playerData.getActiveTrack();
-        if(track == null) {
-            return null;
-        }
-        return track.getPreviewUrl();
-    }
-
-    private void doNext() {
-        if(currentState != null
-                && currentState.getId() != State.INIT) {
-            if(playerData.canNavigateNext()) {
-                int oldIndex = playerData.getActiveTrackIndex();
-                int newIndex = oldIndex + 1;
-                playerData.setActiveTrackIndex(newIndex);
-
-                currentState.onActiveTrackIndexChanged();
-
-                fireTrackChangedEvent(oldIndex, newIndex, playerData.getActiveTrack());
-                fireCurrentNavigationOptionsChanged();
-            }
-        }
-    }
-
-    private void doPrev() {
-        if(currentState != null
-                && currentState.getId() != State.INIT) {
-            if(playerData.canNavigatePrev()) {
-                int oldIndex = playerData.getActiveTrackIndex();
-                int newIndex = oldIndex - 1;
-                playerData.setActiveTrackIndex(newIndex);
-
-                currentState.onActiveTrackIndexChanged();
-
-                fireTrackChangedEvent(oldIndex, newIndex, playerData.getActiveTrack());
-                fireCurrentNavigationOptionsChanged();
-            }
-        }
-    }
-
-    private void removeMediaPlayer() {
-        if(mediaPlayer != null) {
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
-    }
-
-    private void ensureMediaPlayer() {
-        if(mediaPlayer != null) {
-            return;
-        }
-        mediaPlayer = new MediaPlayerWrapper();
-        mediaPlayer.setOnCompletionListener(this);
-        mediaPlayer.setOnPreparedListener(this);
-    }
-
     private void fireCurrentNavigationOptionsChanged() {
-        if(playerData == null) {
+        if(tracksPlayer == null) {
             return;
         }
-        EventBus.getDefault().post(new PlaybackNavigationOptionsChangedEvent(playerData.getActiveTrackIndex(), playerData.canNavigatePrev(), playerData.canNavigateNext()));
+        EventBus.getDefault().post(new PlaybackNavigationOptionsChangedEvent(tracksPlayer.getActiveTrackIndex(), tracksPlayer.canNavigatePrev(), tracksPlayer.canNavigateNext()));
     }
 
-    private void fireTrackChangedEvent(int oldIndex, int newIndex, Track newTrack) {
-        EventBus.getDefault().post(new PlaybackTrackChangedEvent(oldIndex, newIndex, newTrack));
+    private void fireTrackChangedEvent(int oldIndex, int newIndex) {
+        if(tracksPlayer != null) {
+            EventBus.getDefault().post(new PlaybackTrackChangedEvent(oldIndex, newIndex, tracksPlayer.getActiveTrack()));
+        }
     }
 
     private void fireCurrentMediaPlayerPositions() {
-        if(mediaPlayer == null) {
+        if(tracksPlayer == null) {
             return;
         }
         EventBus.getDefault().post(
                 new PlaybackDataChangedEvent(
-                        mediaPlayer.getCurrentPosition(),
-                        mediaPlayer.getDuration(),
-                        mediaPlayer.isPrepared(),
-                        mediaPlayer.hasError()));
+                        tracksPlayer.getCurrentPosition(),
+                        tracksPlayer.getDuration(),
+                        tracksPlayer.isPrepared(),
+                        tracksPlayer.hasError()));
     }
 
-    @Override
-    public void onCompletion(MediaPlayer mp) {
-        if(currentState != null) {
-            currentState.onSongFinished();
-        }
-    }
-
-    @Override
-    public void onPrepared(MediaPlayer mp) {
-        fireCurrentMediaPlayerPositions();
-    }
-
-    private void doSeekTo(int ms) {
-        mediaPlayer.seekTo(ms);
-        fireCurrentMediaPlayerPositions();
-    }
-
-    private void traverseTo(@State.ID int stateId) {
-        if(currentState != null
-                && currentState.getId() == stateId)
+    private void firePlayingStateChanged() {
+        if(tracksPlayer == null) {
             return;
-        State state = createState(stateId);
-        if(currentState != null) {
-            currentState.onLeave(stateId);
         }
-        currentState = state;
-        if(currentState != null) {
-            currentState.onEnter();
-        }
+        EventBus.getDefault().post(new PlaybackPlayingStateChanged(tracksPlayer.isPlaying()));
     }
 
-    private State createState(@State.ID int stateId) {
-        switch(stateId) {
-            case State.INIT:
-                return new StateInit();
-            case State.READY:
-                return new StateReady();
-            case State.PLAYING:
-                return new StatePlaying();
-            case State.PAUSED:
-                return new StatePaused();
-            case State.FINISHED:
-                return new StateFinished();
+    private void updateNotification() {
+        if(tracksPlayer == null)
+            return;
+        if(!isServiceBound) {
+            if(!isStopped) {
+                showNotification(tracksPlayer.isPlaying());
+            } else {
+                hideNotification();
+            }
+        } else {
+            hideNotification();
         }
-        return null;
     }
 
     private AsyncTask<Object, Object, Object> imageLoadingTask;
@@ -376,7 +286,9 @@ public class MediaPlayService extends Service implements MediaPlayer.OnCompletio
         if(isServiceBound)
             return;
 
-        final String albumImageUri = playerData.getActiveTrack().getAlbumThumbnailLargeUrl();
+        if(tracksPlayer == null || tracksPlayer.getActiveTrack() == null)
+            return;
+        final String albumImageUri = tracksPlayer.getActiveTrack().getAlbumThumbnailLargeUrl();
 
         if(imageLoadingTask != null) {
             imageLoadingTask.cancel(true);
@@ -413,252 +325,18 @@ public class MediaPlayService extends Service implements MediaPlayer.OnCompletio
     }
 
     private void showNotification(Bitmap albumArtBitmap, boolean currentlyPlaying, boolean bindToNotification) {
-        if(playerData == null
-                || playerData.getActiveTrack() == null) {
+        if(tracksPlayer == null
+                || tracksPlayer.getActiveTrack() == null) {
             return;
         }
 
-        String artistName = playerData.getArtistName();
-        String trackName = playerData.getActiveTrack().getTrackName();
+        String artistName = tracksPlayer.getArtistName();
+        String trackName = tracksPlayer.getActiveTrack().getTrackName();
 
         Notification notification = PlayerNotification.notify(this, artistName, trackName, albumArtBitmap, currentlyPlaying);
 
         if(bindToNotification) {
             startForeground(PlayerNotification.NOTIFICATION_ID_STICKY, notification);
-        }
-    }
-
-    class StateInit extends StateBase {
-
-        @Override
-        public int getId() {
-            return INIT;
-        }
-
-        @Override
-        public void onPlay() {
-            super.onPlay();
-            isStartPlayingIntended = true;
-        }
-
-        @Override
-        public void onPause() {
-            super.onPause();
-            isStartPlayingIntended = false;
-        }
-
-        @Override
-        public void onStop() {
-            super.onStop();
-            isStartPlayingIntended = false;
-        }
-
-        @Override
-        public void onMetadataChanged() {
-            super.onMetadataChanged();
-            traverseTo(State.READY);
-        }
-    }
-
-    class StateReady extends StateBase {
-
-        @Override
-        public void onEnter() {
-            super.onEnter();
-            ensureMediaPlayer();
-            mediaPlayer.stop();
-            mediaPlayer.setUrl(getCurrentUrl());
-            if(isStartPlayingIntended) {
-                isStartPlayingIntended = false;
-                traverseTo(State.PLAYING);
-            } else if(!isStopped) {
-                showNotification(false);
-            }
-        }
-
-        @Override
-        public int getId() {
-            return READY;
-        }
-
-        @Override
-        public void onPlay() {
-            super.onPlay();
-            traverseTo(State.PLAYING);
-        }
-
-        @Override
-        public void onActiveTrackIndexChanged() {
-            super.onActiveTrackIndexChanged();
-            showNotification(false);
-        }
-    }
-
-    class StatePlaying extends StateBase {
-
-        private Timer updateDurationTimer;
-        private AsyncTask<Object, Object, Object> imageLoadingTask;
-
-        public StatePlaying() {
-            updateDurationTimer = new Timer("update duration timer");
-        }
-
-        @Override
-        public void onEnter() {
-            super.onEnter();
-            mediaPlayer.play();
-            updateDurationTimer.scheduleAtFixedRate(new TimerTask() {
-                @Override
-                public void run() {
-                    if(mediaPlayer != null) {
-                        fireCurrentMediaPlayerPositions();
-                    }
-                }
-            }, 0, DURATION_UPDATE_DELAY_MS);
-            showNotification(true);
-        }
-
-        @Override
-        public void onLeave(@ID int newState) {
-            super.onLeave(newState);
-            updateDurationTimer.cancel();
-            if(imageLoadingTask != null) {
-                imageLoadingTask.cancel(true);
-            }
-        }
-
-        @Override
-        public int getId() {
-            return State.PLAYING;
-        }
-
-        @Override
-        public void onPause() {
-            super.onPause();
-            traverseTo(State.PAUSED);
-        }
-
-        @Override
-        public void onStop() {
-            super.onStop();
-            traverseTo(State.READY);
-        }
-
-        @Override
-        public void onMetadataChanged() {
-            super.onMetadataChanged();
-            traverseTo(State.READY);
-        }
-
-        @Override
-        public void onSongFinished() {
-            super.onSongFinished();
-            doNext();
-        }
-
-        @Override
-        public void seekTo(int ms) {
-            super.seekTo(ms);
-            doSeekTo(ms);
-        }
-
-        @Override
-        public void onActiveTrackIndexChanged() {
-            super.onActiveTrackIndexChanged();
-            isStartPlayingIntended = true;
-            traverseTo(State.READY);
-        }
-    }
-
-    class StatePaused extends StateBase {
-
-        @Override
-        public void onEnter() {
-            super.onEnter();
-            mediaPlayer.pause();
-            showNotification(false);
-        }
-
-        @Override
-        public void onLeave(@ID int newState) {
-            super.onLeave(newState);
-            if(imageLoadingTask != null) {
-                imageLoadingTask.cancel(true);
-            }
-        }
-
-        @Override
-        public int getId() {
-            return State.PAUSED;
-        }
-
-        @Override
-        public void onPlay() {
-            super.onPlay();
-            traverseTo(State.PLAYING);
-        }
-
-        @Override
-        public void onStop() {
-            super.onStop();
-            traverseTo(State.READY);
-        }
-
-        @Override
-        public void onMetadataChanged() {
-            super.onMetadataChanged();
-            traverseTo(State.READY);
-        }
-
-        @Override
-        public void seekTo(int ms) {
-            super.seekTo(ms);
-            doSeekTo(ms);
-        }
-
-        @Override
-        public void onActiveTrackIndexChanged() {
-            super.onActiveTrackIndexChanged();
-            isStartPlayingIntended = false;
-            traverseTo(State.READY);
-        }
-    }
-
-    class StateFinished extends StateBase {
-
-        @Override
-        public void onEnter() {
-            super.onEnter();
-        }
-
-        @Override
-        public int getId() {
-            return State.FINISHED;
-        }
-
-        @Override
-        public void onPlay() {
-            super.onPlay();
-            traverseTo(State.PLAYING);
-        }
-
-        @Override
-        public void onStop() {
-            super.onStop();
-            traverseTo(State.READY);
-        }
-
-        @Override
-        public void onMetadataChanged() {
-            super.onMetadataChanged();
-            traverseTo(State.READY);
-        }
-
-        @Override
-        public void onActiveTrackIndexChanged() {
-            super.onActiveTrackIndexChanged();
-            isStartPlayingIntended = false;
-            traverseTo(State.READY);
         }
     }
 }

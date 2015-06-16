@@ -6,7 +6,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Interface for all MusicPlayer Service states.
+ * Interface for all TracksPlayer states.
  */
 interface State {
 

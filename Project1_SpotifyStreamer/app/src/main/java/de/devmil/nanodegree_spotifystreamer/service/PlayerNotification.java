@@ -6,10 +6,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.net.Uri;
 import android.os.Build;
 import android.support.v4.app.NotificationCompat;
 
@@ -33,10 +30,6 @@ public class PlayerNotification {
 
     private static Notification currentNotification = null;
 
-    public static Notification getCurrentNotification() {
-        return currentNotification;
-    }
-
     /**
      * Shows the notification, or updates a previously shown notification of
      * this type, with the given parameters.
@@ -59,21 +52,19 @@ public class PlayerNotification {
         Intent launchPlayerIntent = PlayerActivity.createLaunchIntent(context);
 
         final NotificationCompat.Builder builder = new NotificationCompat.Builder(context)
-                .setCategory(Notification.CATEGORY_SERVICE)
                 //.setOngoing(true)
                 .setLocalOnly(true)
                 .setDeleteIntent(
                         PendingIntent.getService(
-                        context,
-                        0,
-                        MediaPlayService.createCommandIntent(
                                 context,
-                                MediaPlayService.COMMAND_STOP
-                        ),
-                        PendingIntent.FLAG_CANCEL_CURRENT
-                    )
+                                0,
+                                MediaPlayService.createCommandIntent(
+                                        context,
+                                        MediaPlayService.COMMAND_STOP
+                                ),
+                                PendingIntent.FLAG_CANCEL_CURRENT
+                        )
                 )
-                .setVisibility(Notification.VISIBILITY_PUBLIC)
 
                         // Set required fields, including the small icon, the
                         // notification title, and text.
@@ -148,6 +139,11 @@ public class PlayerNotification {
 
                         // don't Automatically dismiss the notification when it is touched.
                 .setAutoCancel(false);
+
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            builder.setCategory(Notification.CATEGORY_SERVICE);
+            builder.setVisibility(Notification.VISIBILITY_PUBLIC);
+        }
 
         Notification newNotification = builder.build();
 
