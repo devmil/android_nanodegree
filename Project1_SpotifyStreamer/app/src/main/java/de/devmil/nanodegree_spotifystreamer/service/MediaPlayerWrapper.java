@@ -44,9 +44,6 @@ public class MediaPlayerWrapper implements MediaPlayer.OnCompletionListener, Med
     }
 
     public void setUrl(String url) {
-        if(url != null
-                && url.equals(currentUrl))
-            return;
         currentUrl = url;
         isPrepared = false;
         hasError = false;
