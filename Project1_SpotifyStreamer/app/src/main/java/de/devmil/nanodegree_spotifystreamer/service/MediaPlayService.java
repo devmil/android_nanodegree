@@ -186,12 +186,7 @@ public class MediaPlayService extends Service implements TracksPlayerListener {
             isServiceBound = false;
             isStopped = false;
             if(tracksPlayer != null) {
-                boolean isPlay = tracksPlayer.isPlaying();
-                boolean isPaused = tracksPlayer.isPaused();
-
-                if(isPlay || isPaused) {
-                    showNotification(isPlay);
-                }
+                updateNotification();
             }
         }
     }
@@ -277,15 +272,21 @@ public class MediaPlayService extends Service implements TracksPlayerListener {
     private void updateNotification() {
         if(tracksPlayer == null)
             return;
-        if(!isServiceBound) {
-            if(!isStopped) {
-                showNotification(tracksPlayer.isPlaying());
-            } else {
-                hideNotification();
-            }
+        if(shouldShowNotification()) {
+            showNotification(tracksPlayer.isPlaying());
         } else {
             hideNotification();
         }
+    }
+
+    private boolean shouldShowNotification() {
+        if(tracksPlayer == null)
+            return false;
+        if(isServiceBound)
+            return false;
+        if(isStopped)
+            return false;
+        return true;
     }
 
     private Subscription imageLoadingTask;
@@ -302,20 +303,20 @@ public class MediaPlayService extends Service implements TracksPlayerListener {
                         .asBitmap()
                         .dontAnimate()
                 )
-                .into(
-                    new SimpleTarget<Bitmap>() {
-                        @Override
-                        public void onResourceReady(Bitmap resource, GlideAnimation<? super Bitmap> glideAnimation) {
-                            subscriber.onNext(resource);
-                            subscriber.onCompleted();
-                        }
+                        .into(
+                                new SimpleTarget<Bitmap>() {
+                                    @Override
+                                    public void onResourceReady(Bitmap resource, GlideAnimation<? super Bitmap> glideAnimation) {
+                                        subscriber.onNext(resource);
+                                        subscriber.onCompleted();
+                                    }
 
-                        @Override
-                        public void onLoadFailed(Exception e, Drawable errorDrawable) {
-                            subscriber.onNext(null);
-                            subscriber.onCompleted();
-                        }
-                    }
+                                    @Override
+                                    public void onLoadFailed(Exception e, Drawable errorDrawable) {
+                                        subscriber.onNext(null);
+                                        subscriber.onCompleted();
+                                    }
+                                }
                 );
             }
         });
@@ -349,6 +350,8 @@ public class MediaPlayService extends Service implements TracksPlayerListener {
                 .subscribe(new Action1<Bitmap>() {
                     @Override
                     public void call(Bitmap bitmap) {
+                        if(!shouldShowNotification())
+                            return;
                         showNotification(bitmap, currentlyPlaying, false);
                     }
                 });

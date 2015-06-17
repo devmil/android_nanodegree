@@ -1,6 +1,11 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/activity_player_fragment_placeholder"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:layout="@android:layout/list_content" />
+    android:gravity="center_vertical">
+    <FrameLayout
+        android:id="@+id/activity_player_fragment_placeholder"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:layout="@android:layout/list_content" />
+</LinearLayout>

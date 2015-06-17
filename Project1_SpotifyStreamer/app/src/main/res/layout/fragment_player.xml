@@ -1,6 +1,6 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     tools:context="de.devmil.nanodegree_spotifystreamer.fragments.PlayerFragment">
 
     <RelativeLayout
@@ -9,14 +9,15 @@
         android:paddingLeft="@dimen/activity_horizontal_margin"
         android:paddingRight="@dimen/activity_horizontal_margin"
         android:paddingTop="@dimen/activity_vertical_margin"
-        android:paddingBottom="@dimen/activity_vertical_margin">
+        android:paddingBottom="@dimen/activity_vertical_margin"
+        android:gravity="center_vertical">
 
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:gravity="center_horizontal">
+            android:gravity="center">
 
             <TextView
                 android:id="@+id/fragment_player_label_artist"
@@ -30,11 +31,13 @@
             <ImageView
                 android:id="@+id/fragment_player_img_album"
                 android:layout_width="match_parent"
-                android:layout_height="0dip"
+                android:layout_height="0dp"
                 android:layout_weight="1"
                 android:scaleType="fitCenter"
-                android:layout_marginLeft="@dimen/fragment_player_margin_vertical_img_album"
-                android:layout_marginRight="@dimen/fragment_player_margin_vertical_img_album"/>
+                android:layout_marginTop="@dimen/fragment_player_margin_vertical_img_album"
+                android:layout_marginBottom="@dimen/fragment_player_margin_vertical_img_album"
+                android:layout_marginLeft="@dimen/fragment_player_margin_horizontal_img_album"
+                android:layout_marginRight="@dimen/fragment_player_margin_horizontal_img_album"/>
 
             <TextView
                 android:id="@+id/fragment_player_label_album"

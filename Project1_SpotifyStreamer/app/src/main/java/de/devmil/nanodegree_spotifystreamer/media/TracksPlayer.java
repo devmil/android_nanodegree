@@ -45,6 +45,7 @@ public class TracksPlayer implements MediaPlayer.OnCompletionListener, MediaPlay
         if(currentState != null) {
             currentState.onMetadataChanged();
         }
+        traverseTo(State.READY, true);
         fireNavigationOptionsChanged();
         fireTrackChanged(oldIndex, activeTrackIndex);
         firePositionChanged();
@@ -262,7 +263,12 @@ public class TracksPlayer implements MediaPlayer.OnCompletionListener, MediaPlay
     }
 
     private void traverseTo(@State.ID int stateId) {
-        if(currentState != null
+        traverseTo(stateId, false);
+    }
+
+    private void traverseTo(@State.ID int stateId, boolean force) {
+        if(!force
+                && currentState != null
                 && currentState.getId() == stateId)
             return;
         @State.ID
