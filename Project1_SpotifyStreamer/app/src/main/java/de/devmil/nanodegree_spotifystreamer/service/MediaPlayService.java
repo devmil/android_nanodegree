@@ -18,6 +18,7 @@ import com.bumptech.glide.request.target.SimpleTarget;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.concurrent.TimeUnit;
 
 import de.devmil.nanodegree_spotifystreamer.data.PlayerData;
 import de.devmil.nanodegree_spotifystreamer.data.Track;
@@ -30,6 +31,12 @@ import de.devmil.nanodegree_spotifystreamer.media.TracksPlayer;
 import de.devmil.nanodegree_spotifystreamer.media.TracksPlayerListener;
 import de.devmil.nanodegree_spotifystreamer.utils.GlideConfig;
 import de.greenrobot.event.EventBus;
+import rx.Observable;
+import rx.Subscriber;
+import rx.Subscription;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Action0;
+import rx.functions.Action1;
 
 /**
  * the media player service controls the playback of the track preview streams.
@@ -129,6 +136,8 @@ public class MediaPlayService extends Service implements TracksPlayerListener {
     public static Intent createStartIntent(Context context) {
         return new Intent(context, MediaPlayService.class);
     }
+
+    private static final int NOTIFICATION_IMAGE_DOWNLOAD_TIMEOUT_SECONDS = 2;
 
     private boolean isServiceBound = false;
     private boolean isStopped = false;
@@ -283,7 +292,48 @@ public class MediaPlayService extends Service implements TracksPlayerListener {
         }
     }
 
-    private AsyncTask<Object, Object, Object> imageLoadingTask;
+    private Subscription imageLoadingTask;
+
+    private Observable<Bitmap> downloadImage(final String url) {
+        return Observable.create(new Observable.OnSubscribe<Bitmap>() {
+            @Override
+            public void call(final Subscriber<? super Bitmap> subscriber) {
+                subscriber.onStart();
+                GlideConfig.configure(
+                    Glide
+                        .with(MediaPlayService.this)
+                        .load(url)
+                        .asBitmap()
+                        .dontAnimate()
+                )
+                .into(
+                    new SimpleTarget<Bitmap>() {
+                        @Override
+                        public void onResourceReady(Bitmap resource, GlideAnimation<? super Bitmap> glideAnimation) {
+                            subscriber.onNext(resource);
+                            subscriber.onCompleted();
+                        }
+
+                        @Override
+                        public void onLoadFailed(Exception e, Drawable errorDrawable) {
+                            subscriber.onNext(null);
+                            subscriber.onCompleted();
+                        }
+                    }
+                );
+            }
+        });
+    }
+
+    private Observable<Bitmap> getErrorImage() {
+        return Observable.create(new Observable.OnSubscribe<Bitmap>() {
+            @Override
+            public void call(Subscriber<? super Bitmap> subscriber) {
+                subscriber.onNext(null);
+                subscriber.onCompleted();
+            }
+        });
+    }
 
     private void showNotification(final boolean currentlyPlaying) {
 
@@ -295,51 +345,23 @@ public class MediaPlayService extends Service implements TracksPlayerListener {
         final String albumImageUri = tracksPlayer.getActiveTrack().getAlbumThumbnailLargeUrl();
 
         if(imageLoadingTask != null) {
-            imageLoadingTask.cancel(true);
+            imageLoadingTask.unsubscribe();
         }
 
-        imageLoadingTask = new AsyncTask<Object, Object, Object>() {
-            @Override
-            protected Object doInBackground(Object... params) {
-                new Handler(MediaPlayService.this.getMainLooper()).post(new Runnable() {
+        imageLoadingTask = downloadImage(albumImageUri)
+                .timeout(NOTIFICATION_IMAGE_DOWNLOAD_TIMEOUT_SECONDS, TimeUnit.SECONDS, getErrorImage())
+                .subscribe(new Action1<Bitmap>() {
                     @Override
-                    public void run() {
-                        GlideConfig.configure(
-                            Glide
-                                .with(MediaPlayService.this)
-                                .load(albumImageUri)
-                                .asBitmap()
-                                .dontAnimate()
-                        )
-                        .into(
-                                new SimpleTarget<Bitmap>() {
-                                    @Override
-                                    public void onResourceReady(Bitmap resource, GlideAnimation<? super Bitmap> glideAnimation) {
-                                        if (!isCancelled()) {
-                                            showNotification(resource, currentlyPlaying, false);
-                                        }
-                                    }
-
-                                    @Override
-                                    public void onLoadFailed(Exception e, Drawable errorDrawable) {
-                                        if (!isCancelled()) {
-                                            showNotification(null, currentlyPlaying, false);
-                                        }
-                                    }
-                                }
-                        );
+                    public void call(Bitmap bitmap) {
+                        showNotification(bitmap, currentlyPlaying, false);
                     }
                 });
-                return null;
-            }
-        };
-
-        imageLoadingTask.execute();
     }
 
     private void hideNotification() {
         if(imageLoadingTask != null) {
-            imageLoadingTask.cancel(true);
+            imageLoadingTask.unsubscribe();
+            imageLoadingTask = null;
         }
         PlayerNotification.cancel(this);
     }
