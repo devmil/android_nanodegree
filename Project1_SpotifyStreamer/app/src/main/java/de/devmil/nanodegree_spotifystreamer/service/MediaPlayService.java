@@ -2,10 +2,10 @@ package de.devmil.nanodegree_spotifystreamer.service;
 
 import android.app.Notification;
 import android.app.Service;
-import android.app.usage.UsageEvents;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Handler;
@@ -25,6 +25,10 @@ import de.devmil.nanodegree_spotifystreamer.event.PlaybackDataChangedEvent;
 import de.devmil.nanodegree_spotifystreamer.event.PlaybackNavigationOptionsChangedEvent;
 import de.devmil.nanodegree_spotifystreamer.event.PlaybackPlayingStateChanged;
 import de.devmil.nanodegree_spotifystreamer.event.PlaybackTrackChangedEvent;
+import de.devmil.nanodegree_spotifystreamer.media.State;
+import de.devmil.nanodegree_spotifystreamer.media.TracksPlayer;
+import de.devmil.nanodegree_spotifystreamer.media.TracksPlayerListener;
+import de.devmil.nanodegree_spotifystreamer.utils.GlideConfig;
 import de.greenrobot.event.EventBus;
 
 /**
@@ -300,14 +304,30 @@ public class MediaPlayService extends Service implements TracksPlayerListener {
                 new Handler(MediaPlayService.this.getMainLooper()).post(new Runnable() {
                     @Override
                     public void run() {
-                        Glide.with(MediaPlayService.this).load(albumImageUri).asBitmap().dontAnimate().into(new SimpleTarget<Bitmap>() {
-                            @Override
-                            public void onResourceReady(Bitmap resource, GlideAnimation<? super Bitmap> glideAnimation) {
-                                if(!isCancelled()) {
-                                    showNotification(resource, currentlyPlaying, false);
+                        GlideConfig.configure(
+                            Glide
+                                .with(MediaPlayService.this)
+                                .load(albumImageUri)
+                                .asBitmap()
+                                .dontAnimate()
+                        )
+                        .into(
+                                new SimpleTarget<Bitmap>() {
+                                    @Override
+                                    public void onResourceReady(Bitmap resource, GlideAnimation<? super Bitmap> glideAnimation) {
+                                        if (!isCancelled()) {
+                                            showNotification(resource, currentlyPlaying, false);
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onLoadFailed(Exception e, Drawable errorDrawable) {
+                                        if (!isCancelled()) {
+                                            showNotification(null, currentlyPlaying, false);
+                                        }
+                                    }
                                 }
-                            }
-                        });
+                        );
                     }
                 });
                 return null;

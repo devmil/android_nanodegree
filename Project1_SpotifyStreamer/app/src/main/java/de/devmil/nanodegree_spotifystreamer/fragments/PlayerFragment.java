@@ -26,6 +26,7 @@ import de.devmil.nanodegree_spotifystreamer.event.PlaybackNavigationOptionsChang
 import de.devmil.nanodegree_spotifystreamer.event.PlaybackPlayingStateChanged;
 import de.devmil.nanodegree_spotifystreamer.event.PlaybackTrackChangedEvent;
 import de.devmil.nanodegree_spotifystreamer.service.MediaPlayService;
+import de.devmil.nanodegree_spotifystreamer.utils.GlideConfig;
 import de.greenrobot.event.EventBus;
 
 /**
@@ -178,7 +179,7 @@ public class PlayerFragment extends Fragment {
 
         if(selectedTrack.getAlbumThumbnailLargeUrl() != null) {
             try {
-                Glide.with(this).load(selectedTrack.getAlbumThumbnailLargeUrl()).into(imageAlbum);
+                GlideConfig.configure(Glide.with(this).load(selectedTrack.getAlbumThumbnailLargeUrl())).into(imageAlbum);
             } catch(Exception e) {
                 e.printStackTrace();
                 imageAlbum.setImageDrawable(null);

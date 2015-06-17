@@ -1,4 +1,4 @@
-package de.devmil.nanodegree_spotifystreamer.service;
+package de.devmil.nanodegree_spotifystreamer.media;
 
 import android.media.MediaPlayer;
 import android.support.annotation.IntDef;

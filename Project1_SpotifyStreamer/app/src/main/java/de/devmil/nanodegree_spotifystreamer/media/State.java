@@ -1,4 +1,4 @@
-package de.devmil.nanodegree_spotifystreamer.service;
+package de.devmil.nanodegree_spotifystreamer.media;
 
 import android.support.annotation.IntDef;
 
@@ -8,7 +8,7 @@ import java.lang.annotation.RetentionPolicy;
 /**
  * Interface for all TracksPlayer states.
  */
-interface State {
+public interface State {
 
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({ INIT, READY, PLAYING, PAUSED, FINISHED })

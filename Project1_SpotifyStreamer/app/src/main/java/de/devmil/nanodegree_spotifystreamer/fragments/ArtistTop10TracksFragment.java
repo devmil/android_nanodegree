@@ -28,6 +28,7 @@ import de.devmil.nanodegree_spotifystreamer.data.TracksSearchResult;
 import de.devmil.nanodegree_spotifystreamer.model.SpotifyTopTracksSearch;
 import de.devmil.nanodegree_spotifystreamer.model.SpotifyTopTracksSearchListener;
 import de.devmil.nanodegree_spotifystreamer.service.MediaPlayService;
+import de.devmil.nanodegree_spotifystreamer.utils.GlideConfig;
 import de.devmil.nanodegree_spotifystreamer.utils.ViewUtils;
 import kaaes.spotify.webapi.android.SpotifyApi;
 
@@ -330,7 +331,7 @@ public class ArtistTop10TracksFragment extends Fragment {
 
             if(imageUrlToLoad != null)
             {
-                Glide.with(context).load(imageUrlToLoad).into(viewHolder.ivTrack);
+                GlideConfig.configure(Glide.with(context).load(imageUrlToLoad)).into(viewHolder.ivTrack);
             }
             else
             {

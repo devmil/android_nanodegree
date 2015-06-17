@@ -1,4 +1,4 @@
-package de.devmil.nanodegree_spotifystreamer.service;
+package de.devmil.nanodegree_spotifystreamer.media;
 
 public interface TracksPlayerListener {
     void onCurrentTrackChanged(int oldIndex, int newIndex);

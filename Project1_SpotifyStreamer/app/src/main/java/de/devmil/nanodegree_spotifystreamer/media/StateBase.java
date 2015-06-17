@@ -1,4 +1,4 @@
-package de.devmil.nanodegree_spotifystreamer.service;
+package de.devmil.nanodegree_spotifystreamer.media;
 
 /**
  * This class simply implements all methods (but the Id) for the State interface.

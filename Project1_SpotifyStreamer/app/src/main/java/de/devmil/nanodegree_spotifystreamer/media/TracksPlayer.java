@@ -1,4 +1,4 @@
-package de.devmil.nanodegree_spotifystreamer.service;
+package de.devmil.nanodegree_spotifystreamer.media;
 
 import android.media.MediaPlayer;
 
@@ -323,7 +323,7 @@ public class TracksPlayer implements MediaPlayer.OnCompletionListener, MediaPlay
         @Override
         public void onMetadataChanged() {
             super.onMetadataChanged();
-            traverseTo(State.READY);
+            traverseTo(READY);
         }
     }
 
@@ -337,7 +337,7 @@ public class TracksPlayer implements MediaPlayer.OnCompletionListener, MediaPlay
             mediaPlayer.setUrl(getCurrentUrl());
             if(isStartPlayingIntended) {
                 isStartPlayingIntended = false;
-                traverseTo(State.PLAYING);
+                traverseTo(PLAYING);
             }
         }
 
@@ -349,7 +349,7 @@ public class TracksPlayer implements MediaPlayer.OnCompletionListener, MediaPlay
         @Override
         public void onPlay() {
             super.onPlay();
-            traverseTo(State.PLAYING);
+            traverseTo(PLAYING);
         }
 
         @Override
@@ -388,25 +388,25 @@ public class TracksPlayer implements MediaPlayer.OnCompletionListener, MediaPlay
 
         @Override
         public int getId() {
-            return State.PLAYING;
+            return PLAYING;
         }
 
         @Override
         public void onPause() {
             super.onPause();
-            traverseTo(State.PAUSED);
+            traverseTo(PAUSED);
         }
 
         @Override
         public void onStop() {
             super.onStop();
-            traverseTo(State.READY);
+            traverseTo(READY);
         }
 
         @Override
         public void onMetadataChanged() {
             super.onMetadataChanged();
-            traverseTo(State.READY);
+            traverseTo(READY);
         }
 
         @Override
@@ -425,7 +425,7 @@ public class TracksPlayer implements MediaPlayer.OnCompletionListener, MediaPlay
         public void onActiveTrackIndexChanged() {
             super.onActiveTrackIndexChanged();
             isStartPlayingIntended = true;
-            traverseTo(State.READY);
+            traverseTo(READY);
         }
     }
 
@@ -444,25 +444,25 @@ public class TracksPlayer implements MediaPlayer.OnCompletionListener, MediaPlay
 
         @Override
         public int getId() {
-            return State.PAUSED;
+            return PAUSED;
         }
 
         @Override
         public void onPlay() {
             super.onPlay();
-            traverseTo(State.PLAYING);
+            traverseTo(PLAYING);
         }
 
         @Override
         public void onStop() {
             super.onStop();
-            traverseTo(State.READY);
+            traverseTo(READY);
         }
 
         @Override
         public void onMetadataChanged() {
             super.onMetadataChanged();
-            traverseTo(State.READY);
+            traverseTo(READY);
         }
 
         @Override
@@ -475,7 +475,7 @@ public class TracksPlayer implements MediaPlayer.OnCompletionListener, MediaPlay
         public void onActiveTrackIndexChanged() {
             super.onActiveTrackIndexChanged();
             isStartPlayingIntended = false;
-            traverseTo(State.READY);
+            traverseTo(READY);
         }
     }
 
@@ -488,32 +488,32 @@ public class TracksPlayer implements MediaPlayer.OnCompletionListener, MediaPlay
 
         @Override
         public int getId() {
-            return State.FINISHED;
+            return FINISHED;
         }
 
         @Override
         public void onPlay() {
             super.onPlay();
-            traverseTo(State.PLAYING);
+            traverseTo(PLAYING);
         }
 
         @Override
         public void onStop() {
             super.onStop();
-            traverseTo(State.READY);
+            traverseTo(READY);
         }
 
         @Override
         public void onMetadataChanged() {
             super.onMetadataChanged();
-            traverseTo(State.READY);
+            traverseTo(READY);
         }
 
         @Override
         public void onActiveTrackIndexChanged() {
             super.onActiveTrackIndexChanged();
             isStartPlayingIntended = false;
-            traverseTo(State.READY);
+            traverseTo(READY);
         }
     }
 }
