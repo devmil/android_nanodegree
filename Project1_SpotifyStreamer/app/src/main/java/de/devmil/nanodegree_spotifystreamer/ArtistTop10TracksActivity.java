@@ -58,7 +58,7 @@ public class ArtistTop10TracksActivity extends AppCompatActivity implements Arti
 
         getSupportActionBar().setSubtitle(artistName);
 
-        ArtistTop10TracksFragment fragment = (ArtistTop10TracksFragment)getSupportFragmentManager().findFragmentById(R.id.fragment_artist_top10_tracks);
+        ArtistTop10TracksFragment fragment = (ArtistTop10TracksFragment)getSupportFragmentManager().findFragmentById(R.id.activity_artist_top10_tracks_fragment_artist_top10_tracks);
         fragment.initData(artistId, artistName);
     }
 

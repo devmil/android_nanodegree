@@ -43,6 +43,8 @@ public class ArtistTop10TracksFragment extends Fragment {
     private ArtistTop10FragmentListener listener;
 
     private static final String KEY_TRACKS_RESULT = "TRACKS_RESULT";
+    private static final String KEY_ARG_ARTIST_ID = "ARG_ARTIST_ID";
+    private static final String KEY_ARG_ARTIST_NAME = "ARG_ARTIST_NAME";
 
     private ListView trackListView;
     private LinearLayout llNoResult;
@@ -56,6 +58,19 @@ public class ArtistTop10TracksFragment extends Fragment {
     private boolean isProgressIndicatorActive;
 
     private boolean resultRestored = false;
+
+    private String artistName;
+    private String artistId;
+
+    public static ArtistTop10TracksFragment create(String artistId, String artistName) {
+        Bundle arguments = new Bundle();
+        arguments.putString(KEY_ARG_ARTIST_ID, artistId);
+        arguments.putString(KEY_ARG_ARTIST_NAME, artistName);
+
+        ArtistTop10TracksFragment result = new ArtistTop10TracksFragment();
+        result.setArguments(arguments);
+        return result;
+    }
 
 
     public ArtistTop10TracksFragment() {
@@ -98,10 +113,23 @@ public class ArtistTop10TracksFragment extends Fragment {
 
         resultRestored = restoreResultFromBundle(savedInstanceState);
 
+        if(getArguments() != null) {
+            String artistId = getArguments().getString(KEY_ARG_ARTIST_ID, null);
+            String artistName = getArguments().getString(KEY_ARG_ARTIST_NAME, null);
+
+            if(artistId != null
+                    && artistName != null) {
+                initData(artistId, artistName);
+            }
+        }
+
         return view;
     }
 
-    public void initData(final String artistId, final String artistName) {
+    public void initData(String artistId, String artistName) {
+
+        this.artistId = artistId;
+        this.artistName = artistName;
 
         trackListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -115,7 +143,12 @@ public class ArtistTop10TracksFragment extends Fragment {
 
                     activity.startService(MediaPlayService.createStartIntent(activity));
 
-                    final PlayerData playerData = new PlayerData(artistId, artistName, searchResult.getTracks(), position);
+                    final PlayerData playerData =
+                            new PlayerData(
+                                    ArtistTop10TracksFragment.this.artistId,
+                                    ArtistTop10TracksFragment.this.artistName,
+                                    searchResult.getTracks(),
+                                    position);
                     activity.bindService(MediaPlayService.createStartIntent(activity), new ServiceConnection() {
                         @Override
                         public void onServiceConnected(ComponentName name, IBinder service) {

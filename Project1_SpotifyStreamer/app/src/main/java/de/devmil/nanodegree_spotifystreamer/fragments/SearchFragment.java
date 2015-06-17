@@ -58,11 +58,16 @@ public class SearchFragment extends Fragment {
 
     private static final String KEY_SEARCH_RESULT = "SEARCH_RESULT";
     private static final String KEY_SCROLL_POSITION = "SCROLL_POSITION";
+    private static final String KEY_SELECTED_ITEM = "SELECTED_ITEM";
 
     private Integer initialScrollPosition = null;
+    private int selectedItemIndex = ListView.INVALID_POSITION;
 
     public void setHighlightSelection(boolean highlightSelection) {
         this.highlightSelection = highlightSelection;
+        if(lvResult != null && highlightSelection) {
+            lvResult.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+        }
     }
 
     public SearchFragment() {
@@ -104,6 +109,7 @@ public class SearchFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Artist currentArtist = (Artist)resultAdapter.getItem(position);
+                selectedItemIndex = position;
                 fireOnArtistSelected(currentArtist);
             }
         });
@@ -164,6 +170,12 @@ public class SearchFragment extends Fragment {
                 lvResult.smoothScrollToPosition(initialScrollPosition);
             }
 
+            if(savedInstanceState.containsKey(KEY_SELECTED_ITEM)) {
+                highlightSelection = true;
+                selectedItemIndex = savedInstanceState.getInt(KEY_SELECTED_ITEM);
+                lvResult.smoothScrollToPosition(selectedItemIndex);
+            }
+
             if(resultAdapter != null) {
                 String searchTerm = editSearch.getText().toString();
                 ArtistSearchResult currentResult = resultAdapter.getCurrentResult();
@@ -175,6 +187,10 @@ public class SearchFragment extends Fragment {
         }
 
         restoringInstanceState = false;
+
+        if(highlightSelection) {
+            lvResult.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+        }
 
         return result;
     }
@@ -208,6 +224,9 @@ public class SearchFragment extends Fragment {
             }
         }
         outState.putInt(KEY_SCROLL_POSITION, lvResult.getFirstVisiblePosition());
+        if(highlightSelection) {
+            outState.putInt(KEY_SELECTED_ITEM, selectedItemIndex);
+        }
     }
 
     private void updateIsResultAvailableState()

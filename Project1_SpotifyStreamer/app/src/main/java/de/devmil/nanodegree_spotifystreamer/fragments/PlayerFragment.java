@@ -2,16 +2,19 @@ package de.devmil.nanodegree_spotifystreamer.fragments;
 
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
@@ -29,10 +32,9 @@ import de.devmil.nanodegree_spotifystreamer.service.MediaPlayService;
 import de.devmil.nanodegree_spotifystreamer.utils.GlideConfig;
 import de.greenrobot.event.EventBus;
 
-/**
- * A simple {@link Fragment} subclass.
- */
-public class PlayerFragment extends Fragment {
+public class PlayerFragment extends DialogFragment {
+
+    private static final String KEY_DIALOG_MODE = "DIALOG_MODE";
 
     private TextView labelArtist;
     private TextView labelTitle;
@@ -50,8 +52,29 @@ public class PlayerFragment extends Fragment {
     private MediaPlayService.MediaPlayBinder serviceBinder;
     private ServiceConnection serviceConnection;
 
+    public static PlayerFragment create(boolean isDialogMode) {
+        Bundle arguments = new Bundle();
+        arguments.putBoolean(KEY_DIALOG_MODE, isDialogMode);
+
+        PlayerFragment result = new PlayerFragment();
+        result.setArguments(arguments);
+        return result;
+    }
+
     public PlayerFragment() {
         // Required empty public constructor
+    }
+
+    private Context getContext() {
+        Activity activity = getActivity();
+        if(activity != null) {
+            return activity;
+        }
+        Dialog dialog = getDialog();
+        if(dialog != null) {
+            return dialog.getContext();
+        }
+        return null;
     }
 
 
@@ -62,6 +85,10 @@ public class PlayerFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_player, container, false);
 
         Context context = inflater.getContext();
+
+        if(getArguments() != null && getArguments().getBoolean(KEY_DIALOG_MODE)) {
+            getDialog().getWindow().requestFeature(Window.FEATURE_NO_TITLE);
+        }
 
         labelArtist = (TextView)view.findViewById(R.id.fragment_player_label_artist);
         labelTitle = (TextView)view.findViewById(R.id.fragment_player_label_title);
@@ -139,28 +166,28 @@ public class PlayerFragment extends Fragment {
     }
 
     private void navigateNext() {
-        Activity activity = getActivity();
-        if(activity == null) {
+        Context context = getContext();
+        if(context == null) {
             return;
         }
-        MediaPlayService.executeCommand(activity, MediaPlayService.COMMAND_NEXT);
+        MediaPlayService.executeCommand(context, MediaPlayService.COMMAND_NEXT);
     }
 
     private void navigatePrev() {
-        Activity activity = getActivity();
-        if(activity == null) {
+        Context context = getContext();
+        if(context == null) {
             return;
         }
-        MediaPlayService.executeCommand(activity, MediaPlayService.COMMAND_PREV);
+        MediaPlayService.executeCommand(context, MediaPlayService.COMMAND_PREV);
     }
 
     private void playPause()
     {
-        Activity activity = getActivity();
-        if(activity == null) {
+        Context context = getContext();
+        if(context == null) {
             return;
         }
-        MediaPlayService.executeCommand(activity, MediaPlayService.COMMAND_TOGGLE_PLAY_PAUSE);
+        MediaPlayService.executeCommand(context, MediaPlayService.COMMAND_TOGGLE_PLAY_PAUSE);
     }
 
     private void updateTrackData() {
@@ -211,14 +238,14 @@ public class PlayerFragment extends Fragment {
     }
 
     private void bindToMusicPlayService() {
-        Activity activity = getActivity();
-        if(activity == null) {
+        Context context = getContext();
+        if(context == null) {
             return;
         }
         if(serviceConnection != null) {
             return;
         }
-        Intent serviceStartIntent = MediaPlayService.createStartIntent(activity);
+        Intent serviceStartIntent = MediaPlayService.createStartIntent(context);
         serviceConnection = new ServiceConnection() {
             @Override
             public void onServiceConnected(ComponentName name, IBinder service) {
@@ -232,19 +259,19 @@ public class PlayerFragment extends Fragment {
                 serviceBinder = null;
             }
         };
-        activity.bindService(serviceStartIntent, serviceConnection, 0);
+        context.bindService(serviceStartIntent, serviceConnection, 0);
     }
 
     private void unbindFromMusicPlayService() {
-        Activity activity = getActivity();
-        if(activity == null) {
+        Context context = getContext();
+        if(context == null) {
             return;
         }
         if(serviceConnection == null) {
             return;
         }
         serviceBinder.beforeUnbind();
-        activity.unbindService(serviceConnection);
+        context.unbindService(serviceConnection);
         serviceBinder = null;
         serviceConnection = null;
     }

@@ -1,6 +1,6 @@
 <fragment xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/fragment_artist_top10_tracks"
+    android:id="@+id/activity_artist_top10_tracks_fragment_artist_top10_tracks"
     android:name="de.devmil.nanodegree_spotifystreamer.fragments.ArtistTop10TracksFragment"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
