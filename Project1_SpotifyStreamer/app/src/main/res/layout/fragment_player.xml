@@ -1,6 +1,7 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
     tools:context="de.devmil.nanodegree_spotifystreamer.fragments.PlayerFragment">
 
     <RelativeLayout
@@ -15,7 +16,7 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
             android:gravity="center">
 
@@ -28,16 +29,23 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" />
 
-            <ImageView
-                android:id="@+id/fragment_player_img_album"
+            <de.devmil.nanodegree_spotifystreamer.uicomponents.RectangleLayout
+                android:id="@+id/fragment_player_img_layout"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
-                android:scaleType="fitCenter"
+                android:gravity="center"
                 android:layout_marginTop="@dimen/fragment_player_margin_vertical_img_album"
                 android:layout_marginBottom="@dimen/fragment_player_margin_vertical_img_album"
                 android:layout_marginLeft="@dimen/fragment_player_margin_horizontal_img_album"
-                android:layout_marginRight="@dimen/fragment_player_margin_horizontal_img_album"/>
+                android:layout_marginRight="@dimen/fragment_player_margin_horizontal_img_album">
+                <ImageView
+                    android:id="@+id/fragment_player_img_album"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:scaleType="fitCenter"/>
+
+            </de.devmil.nanodegree_spotifystreamer.uicomponents.RectangleLayout>
 
             <TextView
                 android:id="@+id/fragment_player_label_album"

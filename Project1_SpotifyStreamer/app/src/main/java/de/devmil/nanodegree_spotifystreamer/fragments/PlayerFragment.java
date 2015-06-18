@@ -17,6 +17,7 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -29,6 +30,7 @@ import de.devmil.nanodegree_spotifystreamer.event.PlaybackNavigationOptionsChang
 import de.devmil.nanodegree_spotifystreamer.event.PlaybackPlayingStateChanged;
 import de.devmil.nanodegree_spotifystreamer.event.PlaybackTrackChangedEvent;
 import de.devmil.nanodegree_spotifystreamer.service.MediaPlayService;
+import de.devmil.nanodegree_spotifystreamer.uicomponents.RectangleLayout;
 import de.devmil.nanodegree_spotifystreamer.utils.GlideConfig;
 import de.greenrobot.event.EventBus;
 
@@ -46,6 +48,7 @@ public class PlayerFragment extends DialogFragment {
     private ImageButton buttonPrev;
     private ImageButton buttonPlayPause;
     private ImageButton buttonNext;
+    private RectangleLayout llImageLayoutHelper;
 
     private boolean userSlideMode = false;
 
@@ -77,7 +80,6 @@ public class PlayerFragment extends DialogFragment {
         return null;
     }
 
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -85,10 +87,6 @@ public class PlayerFragment extends DialogFragment {
         View view = inflater.inflate(R.layout.fragment_player, container, false);
 
         Context context = inflater.getContext();
-
-        if(getArguments() != null && getArguments().getBoolean(KEY_DIALOG_MODE)) {
-            getDialog().getWindow().requestFeature(Window.FEATURE_NO_TITLE);
-        }
 
         labelArtist = (TextView)view.findViewById(R.id.fragment_player_label_artist);
         labelTitle = (TextView)view.findViewById(R.id.fragment_player_label_title);
@@ -100,6 +98,14 @@ public class PlayerFragment extends DialogFragment {
         buttonPrev = (ImageButton)view.findViewById(R.id.fragment_player_btn_prev);
         buttonPlayPause = (ImageButton)view.findViewById(R.id.fragment_player_btn_play_pause);
         buttonNext = (ImageButton)view.findViewById(R.id.fragment_player_btn_next);
+        llImageLayoutHelper = (RectangleLayout)view.findViewById(R.id.fragment_player_img_layout);
+
+        if(getArguments() != null && getArguments().getBoolean(KEY_DIALOG_MODE)) {
+            getDialog().getWindow().requestFeature(Window.FEATURE_NO_TITLE);
+            llImageLayoutHelper.setForceRectangle(true);
+        } else {
+            llImageLayoutHelper.setForceRectangle(false);
+        }
 
         sliderPosition.setMax(0);
 
