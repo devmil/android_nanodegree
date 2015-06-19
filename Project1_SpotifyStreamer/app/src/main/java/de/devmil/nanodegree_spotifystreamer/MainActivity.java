@@ -1,7 +1,9 @@
 package de.devmil.nanodegree_spotifystreamer;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.FrameLayout;
 
@@ -18,6 +20,14 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.Se
     private static final String TOP10TRACKS_FRAGMENT_TAG = "T10TFTAG";
     private static final String PLAYER_FRAGMENT_TAG = "PLAYERTAG";
 
+    private static final String ARG_LAUNCH_PLAYER = "ARG_LAUNCH_PLAYER";
+
+    public static Intent createLaunchPlayerIntent(Context context) {
+        Intent launchIntent = new Intent(context, MainActivity.class);
+        launchIntent.putExtra(ARG_LAUNCH_PLAYER, true);
+        return launchIntent;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -29,6 +39,27 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.Se
             isTwoPaneLayout = true;
         }
         searchFragment.setHighlightSelection(isTwoPaneLayout);
+
+        if(savedInstanceState == null) {
+            if(getIntent() != null) {
+                launchPlayerIfNeeded(getIntent());
+            }
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        launchPlayerIfNeeded(intent);
+    }
+
+    private void launchPlayerIfNeeded(Intent intent) {
+        if(intent != null
+                && intent.hasExtra(ARG_LAUNCH_PLAYER)) {
+            if(intent.getBooleanExtra(ARG_LAUNCH_PLAYER, false)) {
+                onLaunchPlayer();
+            }
+        }
     }
 
     @Override
@@ -55,8 +86,18 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.Se
     @Override
     public void onLaunchPlayer() {
         if(isTwoPaneLayout) {
+            Fragment existing = getSupportFragmentManager().findFragmentByTag(PLAYER_FRAGMENT_TAG);
+            if(existing != null
+                    && existing.isVisible()) {
+                return;
+            }
             PlayerFragment playerFragment = PlayerFragment.create(true);
             playerFragment.show(getSupportFragmentManager(), PLAYER_FRAGMENT_TAG);
         }
+    }
+
+    @Override
+    public boolean isTabletMode() {
+        return isTwoPaneLayout;
     }
 }

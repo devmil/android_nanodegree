@@ -157,6 +157,7 @@ public class ArtistTop10TracksFragment extends Fragment {
                                 return;
                             }
                             MediaPlayService.MediaPlayBinder binder = (MediaPlayService.MediaPlayBinder) service;
+                            binder.setIsTabletMode(listener.isTabletMode());
                             binder.setPlayerData(playerData);
 
                             fireOnLaunchPlayer();
@@ -407,7 +408,8 @@ public class ArtistTop10TracksFragment extends Fragment {
      * >Communicating with Other Fragments</a> for more information.
      */
     public interface ArtistTop10FragmentListener {
-        public void onLaunchPlayer();
+        void onLaunchPlayer();
+        boolean isTabletMode();
     }
 
 }

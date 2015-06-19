@@ -67,4 +67,9 @@ public class ArtistTop10TracksActivity extends AppCompatActivity implements Arti
     public void onLaunchPlayer() {
         startActivity(PlayerActivity.createLaunchIntent(this));
     }
+
+    @Override
+    public boolean isTabletMode() {
+        return false;
+    }
 }

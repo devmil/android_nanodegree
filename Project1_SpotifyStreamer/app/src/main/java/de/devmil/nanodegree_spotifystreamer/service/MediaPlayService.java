@@ -20,6 +20,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
+import de.devmil.nanodegree_spotifystreamer.MainActivity;
 import de.devmil.nanodegree_spotifystreamer.PlayerActivity;
 import de.devmil.nanodegree_spotifystreamer.data.PlayerData;
 import de.devmil.nanodegree_spotifystreamer.data.Track;
@@ -110,6 +111,7 @@ public class MediaPlayService extends Service implements TracksPlayerListener {
 
     private boolean isServiceBound = false;
     private boolean isStopped = false;
+    private boolean isTabletMode = false;
     private TracksPlayer tracksPlayer;
 
     private Timer serviceTimeout;
@@ -120,6 +122,10 @@ public class MediaPlayService extends Service implements TracksPlayerListener {
      */
     public class MediaPlayBinder extends Binder
     {
+        public void setIsTabletMode(boolean isTabletMode) {
+            MediaPlayService.this.isTabletMode = isTabletMode;
+        }
+
         public void setPlayerData(PlayerData data)  {
             if(tracksPlayer != null) {
                 tracksPlayer.updatePlayerData(data);
@@ -339,27 +345,27 @@ public class MediaPlayService extends Service implements TracksPlayerListener {
             public void call(final Subscriber<? super Bitmap> subscriber) {
                 subscriber.onStart();
                 GlideConfig.configure(
-                    Glide
-                        .with(MediaPlayService.this)
-                        .load(url)
-                        .asBitmap()
-                        .dontAnimate()
+                        Glide
+                                .with(MediaPlayService.this)
+                                .load(url)
+                                .asBitmap()
+                                .dontAnimate()
                 )
-                .into(
-                    new SimpleTarget<Bitmap>() {
-                        @Override
-                        public void onResourceReady(Bitmap resource, GlideAnimation<? super Bitmap> glideAnimation) {
-                            subscriber.onNext(resource);
-                            subscriber.onCompleted();
-                        }
+                        .into(
+                                new SimpleTarget<Bitmap>() {
+                                    @Override
+                                    public void onResourceReady(Bitmap resource, GlideAnimation<? super Bitmap> glideAnimation) {
+                                        subscriber.onNext(resource);
+                                        subscriber.onCompleted();
+                                    }
 
-                        @Override
-                        public void onLoadFailed(Exception e, Drawable errorDrawable) {
-                            subscriber.onNext(null);
-                            subscriber.onCompleted();
-                        }
-                    }
-                );
+                                    @Override
+                                    public void onLoadFailed(Exception e, Drawable errorDrawable) {
+                                        subscriber.onNext(null);
+                                        subscriber.onCompleted();
+                                    }
+                                }
+                        );
             }
         });
     }
@@ -423,8 +429,11 @@ public class MediaPlayService extends Service implements TracksPlayerListener {
             return;
         }
 
-        //boolean differentiate between smartphone and tablet mode
-        Intent launchPlayerIntent = PlayerActivity.createLaunchIntent(this);
+        Intent launchPlayerIntent =
+                isTabletMode ?
+                        MainActivity.createLaunchPlayerIntent(this)
+                        :
+                        PlayerActivity.createLaunchIntent(this);
 
         String artistName = tracksPlayer.getArtistName();
         String trackName = tracksPlayer.getActiveTrack().getTrackName();
