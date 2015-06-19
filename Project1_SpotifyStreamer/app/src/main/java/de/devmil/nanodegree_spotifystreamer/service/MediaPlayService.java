@@ -36,6 +36,7 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.functions.Action1;
+import rx.functions.Func1;
 
 /**
  * the media player service controls the playback of the track preview streams.
@@ -344,20 +345,20 @@ public class MediaPlayService extends Service implements TracksPlayerListener {
                         .asBitmap()
                         .dontAnimate()
                 )
-                        .into(
-                                new SimpleTarget<Bitmap>() {
-                                    @Override
-                                    public void onResourceReady(Bitmap resource, GlideAnimation<? super Bitmap> glideAnimation) {
-                                        subscriber.onNext(resource);
-                                        subscriber.onCompleted();
-                                    }
+                .into(
+                    new SimpleTarget<Bitmap>() {
+                        @Override
+                        public void onResourceReady(Bitmap resource, GlideAnimation<? super Bitmap> glideAnimation) {
+                            subscriber.onNext(resource);
+                            subscriber.onCompleted();
+                        }
 
-                                    @Override
-                                    public void onLoadFailed(Exception e, Drawable errorDrawable) {
-                                        subscriber.onNext(null);
-                                        subscriber.onCompleted();
-                                    }
-                                }
+                        @Override
+                        public void onLoadFailed(Exception e, Drawable errorDrawable) {
+                            subscriber.onNext(null);
+                            subscriber.onCompleted();
+                        }
+                    }
                 );
             }
         });
@@ -386,14 +387,24 @@ public class MediaPlayService extends Service implements TracksPlayerListener {
             imageLoadingTask.unsubscribe();
         }
 
-        imageLoadingTask = downloadImage(albumImageUri)
-                .timeout(NOTIFICATION_IMAGE_DOWNLOAD_TIMEOUT_SECONDS, TimeUnit.SECONDS, getErrorImage())
-                .subscribe(new Action1<Bitmap>() {
+        imageLoadingTask = getErrorImage()
+                .delay(NOTIFICATION_IMAGE_DOWNLOAD_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .mergeWith(downloadImage(albumImageUri))
+                .subscribe(new Subscriber<Bitmap>() {
                     @Override
-                    public void call(Bitmap bitmap) {
-                        if(!shouldShowNotification())
+                    public void onCompleted() {}
+
+                    @Override
+                    public void onError(Throwable e) {}
+
+                    @Override
+                    public void onNext(Bitmap bitmap) {
+                        if (!shouldShowNotification())
                             return;
                         showNotification(bitmap, currentlyPlaying, false);
+                        if(bitmap != null) {
+                            this.unsubscribe();
+                        }
                     }
                 });
     }
