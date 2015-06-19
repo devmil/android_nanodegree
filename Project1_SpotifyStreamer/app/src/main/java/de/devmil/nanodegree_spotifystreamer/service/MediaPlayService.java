@@ -16,6 +16,8 @@ import com.bumptech.glide.request.target.SimpleTarget;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 import de.devmil.nanodegree_spotifystreamer.PlayerActivity;
@@ -48,38 +50,6 @@ public class MediaPlayService extends Service implements TracksPlayerListener {
     private static final String ACTION_PREV = "ACTION_PREV";
     private static final String ACTION_NEXT = "ACTION_NEXT";
     private static final String ACTION_TOGGLE_PLAY_PAUSE = "ACTION_TOGGLE_PLAY_PAUSE";
-
-    @Override
-    public void onCurrentTrackChanged(int oldIndex, int newIndex) {
-        fireTrackChangedEvent(oldIndex, newIndex);
-        updateNotification();
-    }
-
-    @Override
-    public void onNavigationOptionsChanged() {
-        if(tracksPlayer != null) {
-            EventBus.getDefault().post(new PlaybackNavigationOptionsChangedEvent(tracksPlayer.getActiveTrackIndex(), tracksPlayer.canNavigatePrev(), tracksPlayer.canNavigateNext()));
-        }
-    }
-
-    @Override
-    public void onPositionChanged() {
-        fireCurrentMediaPlayerPositions();
-    }
-
-    @Override
-    public void onPrepared() {
-        fireCurrentMediaPlayerPositions();
-    }
-
-    @Override
-    public void onStateChanged(@State.ID int oldState, @State.ID int newState) {
-        if(oldState == State.PLAYING
-                || newState == State.PLAYING) {
-            firePlayingStateChanged();
-        }
-        updateNotification();
-    }
 
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({ COMMAND_NEXT, COMMAND_PAUSE, COMMAND_PREV, COMMAND_STOP, COMMAND_PLAY, COMMAND_TOGGLE_PLAY_PAUSE })
@@ -135,10 +105,14 @@ public class MediaPlayService extends Service implements TracksPlayerListener {
     }
 
     private static final int NOTIFICATION_IMAGE_DOWNLOAD_TIMEOUT_SECONDS = 2;
+    private static final long SERVICE_TIMEOUT_MS = 5l /* min */ * 60l /* sec */ * 1000l /* msec */;
 
     private boolean isServiceBound = false;
     private boolean isStopped = false;
     private TracksPlayer tracksPlayer;
+
+    private Timer serviceTimeout;
+
 
     /**
      * The binder for the activity <-> service communication
@@ -172,6 +146,7 @@ public class MediaPlayService extends Service implements TracksPlayerListener {
             hideNotification();
             isServiceBound = true;
             isStopped = false;
+            updateTimeout();
         }
 
         public void fireInitialEvents() {
@@ -189,7 +164,41 @@ public class MediaPlayService extends Service implements TracksPlayerListener {
             if(tracksPlayer != null) {
                 updateNotification();
             }
+            updateTimeout();
         }
+    }
+
+    @Override
+    public void onCurrentTrackChanged(int oldIndex, int newIndex) {
+        fireTrackChangedEvent(oldIndex, newIndex);
+        updateNotification();
+    }
+
+    @Override
+    public void onNavigationOptionsChanged() {
+        if(tracksPlayer != null) {
+            EventBus.getDefault().post(new PlaybackNavigationOptionsChangedEvent(tracksPlayer.getActiveTrackIndex(), tracksPlayer.canNavigatePrev(), tracksPlayer.canNavigateNext()));
+        }
+    }
+
+    @Override
+    public void onPositionChanged() {
+        fireCurrentMediaPlayerPositions();
+    }
+
+    @Override
+    public void onPrepared() {
+        fireCurrentMediaPlayerPositions();
+    }
+
+    @Override
+    public void onStateChanged(@State.ID int oldState, @State.ID int newState) {
+        if(oldState == State.PLAYING
+                || newState == State.PLAYING) {
+            firePlayingStateChanged();
+        }
+        updateNotification();
+        updateTimeout();
     }
 
     @Override
@@ -228,6 +237,7 @@ public class MediaPlayService extends Service implements TracksPlayerListener {
         super.onCreate();
         tracksPlayer = new TracksPlayer();
         tracksPlayer.setListener(this);
+        restartTimeout();
     }
 
     @Override
@@ -237,6 +247,35 @@ public class MediaPlayService extends Service implements TracksPlayerListener {
         tracksPlayer.setListener(null);
         PlayerNotification.cancel(MediaPlayService.this);
         stopForeground(true);
+        stopTimeout();
+    }
+
+    private void updateTimeout() {
+        //the timeout gets started when there is no music playing and when there is no UI bound to this service
+        if(isServiceBound
+                || (tracksPlayer != null && tracksPlayer.isPlaying())) {
+            stopTimeout();
+        } else {
+            restartTimeout();
+        }
+    }
+
+    private void restartTimeout() {
+        stopTimeout();
+        serviceTimeout = new Timer("MusicService timeout");
+        serviceTimeout.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                stopSelf();
+            }
+        }, SERVICE_TIMEOUT_MS);
+    }
+
+    private void stopTimeout() {
+        if(serviceTimeout != null) {
+            serviceTimeout.cancel();
+            serviceTimeout = null;
+        }
     }
 
     private void fireCurrentNavigationOptionsChanged() {
