@@ -18,6 +18,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.concurrent.TimeUnit;
 
+import de.devmil.nanodegree_spotifystreamer.PlayerActivity;
 import de.devmil.nanodegree_spotifystreamer.data.PlayerData;
 import de.devmil.nanodegree_spotifystreamer.data.Track;
 import de.devmil.nanodegree_spotifystreamer.event.PlaybackDataChangedEvent;
@@ -208,6 +209,7 @@ public class MediaPlayService extends Service implements TracksPlayerListener {
             } else if (ACTION_STOP.equals(action)) {
                 isStopped = true;
                 tracksPlayer.stop();
+                hideNotification();
             } else if (ACTION_TOGGLE_PLAY_PAUSE.equals(action)) {
                 tracksPlayer.togglePlayPause();
             }
@@ -339,7 +341,7 @@ public class MediaPlayService extends Service implements TracksPlayerListener {
 
         if(tracksPlayer == null || tracksPlayer.getActiveTrack() == null)
             return;
-        final String albumImageUri = tracksPlayer.getActiveTrack().getAlbumThumbnailLargeUrl();
+        final String albumImageUri = tracksPlayer.getActiveTrack().getAlbumThumbnailSmallUrl();
 
         if(imageLoadingTask != null) {
             imageLoadingTask.unsubscribe();
@@ -371,10 +373,13 @@ public class MediaPlayService extends Service implements TracksPlayerListener {
             return;
         }
 
+        //boolean differentiate between smartphone and tablet mode
+        Intent launchPlayerIntent = PlayerActivity.createLaunchIntent(this);
+
         String artistName = tracksPlayer.getArtistName();
         String trackName = tracksPlayer.getActiveTrack().getTrackName();
 
-        Notification notification = PlayerNotification.notify(this, artistName, trackName, albumArtBitmap, currentlyPlaying);
+        Notification notification = PlayerNotification.notify(this, artistName, trackName, albumArtBitmap, currentlyPlaying, launchPlayerIntent);
 
         if(bindToNotification) {
             startForeground(PlayerNotification.NOTIFICATION_ID_STICKY, notification);

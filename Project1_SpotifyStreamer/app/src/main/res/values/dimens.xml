@@ -19,4 +19,7 @@
     <dimen name="fragment_player_margin_vertical_slider_progress">20dip</dimen>
     <dimen name="fragment_player_margin_between_control_buttons">10dp</dimen>
 
+    <dimen name="notification_expanded_height">120dp</dimen>
+    <dimen name="notification_play_controls_height">50dp</dimen>
+    <dimen name="notification_padding">10dp</dimen>
 </resources>

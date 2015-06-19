@@ -276,7 +276,9 @@ public class PlayerFragment extends DialogFragment {
         if(serviceConnection == null) {
             return;
         }
-        serviceBinder.beforeUnbind();
+        if(serviceBinder != null) {
+            serviceBinder.beforeUnbind();
+        }
         context.unbindService(serviceConnection);
         serviceBinder = null;
         serviceConnection = null;

@@ -349,6 +349,10 @@ public class SearchFragment extends Fragment {
 
             Artist entry = (Artist)getItem(position);
 
+            if(entry == null) {
+                return convertView;
+            }
+
             //nothing to do here, the data in the view is already valid
             if(entry.getId().equals(vh.artistId))
                 return convertView;
