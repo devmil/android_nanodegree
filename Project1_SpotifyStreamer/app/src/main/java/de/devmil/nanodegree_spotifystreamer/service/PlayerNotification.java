@@ -31,14 +31,14 @@ public class PlayerNotification {
     private static Notification currentNotification = null;
 
     public static Notification notify(Context context, String artistName, String trackName, Bitmap albumArtBitmap, boolean currentlyPlaying, Intent launchPlayerIntent) {
-        RemoteViews notificationViewUpdatesBig =
-                createNotificationViewUpdates(
+        RemoteViews notificationViewUpdatesSmall =
+                createNotificationViewUpdatesSmall(
                         context,
                         artistName,
                         trackName,
                         albumArtBitmap,
                         currentlyPlaying,
-                        R.layout.notification_big);
+                        R.layout.notification_small);
 
         final NotificationCompat.Builder builder = new NotificationCompat.Builder(context)
                 //.setOngoing(true)
@@ -79,30 +79,29 @@ public class PlayerNotification {
             newNotification.when = currentNotification.when;
         }
 
-        //newNotification.contentView = notificationViewUpdatesBig;
-        newNotification.bigContentView = notificationViewUpdatesBig;
+        newNotification.contentView = notificationViewUpdatesSmall;
 
         currentNotification = newNotification;
 
         return notify(context, newNotification);
     }
 
-    private static RemoteViews createNotificationViewUpdates(Context context, String artistName, String trackName, Bitmap albumArtBitmap, boolean currentlyPlaying, int layout) {
+    private static RemoteViews createNotificationViewUpdatesSmall(Context context, String artistName, String trackName, Bitmap albumArtBitmap, boolean currentlyPlaying, int layout) {
         RemoteViews viewUpdate = new RemoteViews(context.getPackageName(), layout);
 
-        viewUpdate.setImageViewBitmap(R.id.notification_img_album, albumArtBitmap);
-        viewUpdate.setTextViewText(R.id.notification_txt_artist, artistName);
-        viewUpdate.setTextViewText(R.id.notification_txt_track, trackName);
+        viewUpdate.setImageViewBitmap(R.id.notification_small_img_album, albumArtBitmap);
+        viewUpdate.setTextViewText(R.id.notification_small_txt_artist, artistName);
+        viewUpdate.setTextViewText(R.id.notification_small_txt_track, trackName);
 
-//        viewUpdate.setImageViewResource(R.id.notification_btn_stop, android.R.drawable.ic_menu_close_clear_cancel);
-        viewUpdate.setImageViewResource(R.id.notification_btn_prev, android.R.drawable.ic_media_previous);
-        viewUpdate.setImageViewResource(R.id.notification_btn_play_pause, currentlyPlaying ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play);
-        viewUpdate.setImageViewResource(R.id.notification_btn_next, android.R.drawable.ic_media_next);
+//        viewUpdate.setImageViewResource(R.id.notification_small_btn_stop, android.R.drawable.ic_menu_close_clear_cancel);
+        viewUpdate.setImageViewResource(R.id.notification_small_btn_prev, android.R.drawable.ic_media_previous);
+        viewUpdate.setImageViewResource(R.id.notification_small_btn_play_pause, currentlyPlaying ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play);
+        viewUpdate.setImageViewResource(R.id.notification_small_btn_next, android.R.drawable.ic_media_next);
 
-//        viewUpdate.setOnClickPendingIntent(R.id.notification_btn_stop, createServiceCommandIntent(context, MediaPlayService.COMMAND_STOP));
-        viewUpdate.setOnClickPendingIntent(R.id.notification_btn_prev, createServiceCommandIntent(context, MediaPlayService.COMMAND_PREV));
-        viewUpdate.setOnClickPendingIntent(R.id.notification_btn_play_pause, createServiceCommandIntent(context, currentlyPlaying ? MediaPlayService.COMMAND_PAUSE : MediaPlayService.COMMAND_PLAY));
-        viewUpdate.setOnClickPendingIntent(R.id.notification_btn_next, createServiceCommandIntent(context, MediaPlayService.COMMAND_NEXT));
+//        viewUpdate.setOnClickPendingIntent(R.id.notification_small_btn_stop, createServiceCommandIntent(context, MediaPlayService.COMMAND_STOP));
+        viewUpdate.setOnClickPendingIntent(R.id.notification_small_btn_prev, createServiceCommandIntent(context, MediaPlayService.COMMAND_PREV));
+        viewUpdate.setOnClickPendingIntent(R.id.notification_small_btn_play_pause, createServiceCommandIntent(context, currentlyPlaying ? MediaPlayService.COMMAND_PAUSE : MediaPlayService.COMMAND_PLAY));
+        viewUpdate.setOnClickPendingIntent(R.id.notification_small_btn_next, createServiceCommandIntent(context, MediaPlayService.COMMAND_NEXT));
 
         return viewUpdate;
     }
@@ -118,132 +117,6 @@ public class PlayerNotification {
                 PendingIntent.FLAG_CANCEL_CURRENT
         );
     }
-
-    /**
-     * Shows the notification_big, or updates a previously shown notification_big of
-     * this type, with the given parameters.
-     * <p/>
-     * the notification_big.
-     * <p/>
-     * presentation of player notifications. Make
-     * sure to follow the
-     * <a href="https://developer.android.com/design/patterns/notifications.html">
-     * Notification design guidelines</a> when doing so.
-     *
-     * @see #cancel(Context)
-     */
-//    public static Notification notify(final Context context,
-//                              final String artistName,
-//                              final String trackName,
-//                              final Bitmap albumArtBitmap,
-//                              boolean currentlyPlaying) {
-//
-//        Intent launchPlayerIntent = PlayerActivity.createLaunchIntent(context);
-//
-//        final NotificationCompat.Builder builder = new NotificationCompat.Builder(context)
-//                //.setOngoing(true)
-//                .setLocalOnly(true)
-//                .setDeleteIntent(
-//                        PendingIntent.getService(
-//                                context,
-//                                0,
-//                                MediaPlayService.createCommandIntent(
-//                                        context,
-//                                        MediaPlayService.COMMAND_STOP
-//                                ),
-//                                PendingIntent.FLAG_CANCEL_CURRENT
-//                        )
-//                )
-//
-//                        // Set required fields, including the small icon, the
-//                        // notification_big title, and text.
-//                .setSmallIcon(R.drawable.notification_player)
-//                .setContentTitle(artistName)
-//                .setContentText(trackName)
-//
-//                        // All fields below this line are optional.
-//
-//                        // Use a default priority (recognized on devices running Android
-//                        // 4.1 or later)
-//                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-//
-//                        // Provide a large icon, shown with the notification_big in the
-//                        // notification_big drawer on devices running Android 3.0 or later.
-//                .setLargeIcon(albumArtBitmap)
-//
-//                        // Set ticker text (preview) information for this notification_big.
-//                .setTicker(artistName + " - " + trackName)
-//
-//                .setContentIntent(
-//                        PendingIntent.getActivity(
-//                                context,
-//                                0,
-//                                launchPlayerIntent,
-//                                PendingIntent.FLAG_UPDATE_CURRENT))
-//
-//                        // Show an expanded photo on devices running Android 4.1 or
-//                        // later.
-//                .setStyle(new NotificationCompat.BigPictureStyle().bigPicture(albumArtBitmap)
-//                        .setBigContentTitle(artistName + " - " + trackName))
-//
-//                .addAction(
-//                        android.R.drawable.ic_media_previous,
-//                        "",
-//                        PendingIntent.getService(
-//                                context,
-//                                0,
-//                                MediaPlayService.createCommandIntent(
-//                                        context,
-//                                        MediaPlayService.COMMAND_PREV
-//                                ),
-//                                PendingIntent.FLAG_CANCEL_CURRENT
-//                        )
-//                )
-//                .addAction(
-//                        currentlyPlaying ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play,
-//                        "",
-//                        PendingIntent.getService(
-//                                context,
-//                                0,
-//                                MediaPlayService.createCommandIntent(
-//                                        context,
-//                                        currentlyPlaying ? MediaPlayService.COMMAND_PAUSE : MediaPlayService.COMMAND_PLAY
-//                                ),
-//                                PendingIntent.FLAG_CANCEL_CURRENT
-//                        )
-//                )
-//                .addAction(
-//                        android.R.drawable.ic_media_next,
-//                        "",
-//                        PendingIntent.getService(
-//                                context,
-//                                0,
-//                                MediaPlayService.createCommandIntent(
-//                                        context,
-//                                        MediaPlayService.COMMAND_NEXT
-//                                ),
-//                                PendingIntent.FLAG_CANCEL_CURRENT
-//                        )
-//                )
-//
-//                        // don't Automatically dismiss the notification_big when it is touched.
-//                .setAutoCancel(false);
-//
-//        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-//            builder.setCategory(Notification.CATEGORY_SERVICE);
-//            builder.setVisibility(Notification.VISIBILITY_PUBLIC);
-//        }
-//
-//        Notification newNotification = builder.build();
-//
-//        if(currentNotification != null) {
-//            newNotification.when = currentNotification.when;
-//        }
-//
-//        currentNotification = newNotification;
-//
-//        return notify(context, newNotification);
-//    }
 
     @TargetApi(Build.VERSION_CODES.ECLAIR)
     private static Notification notify(final Context context, final Notification notification) {
