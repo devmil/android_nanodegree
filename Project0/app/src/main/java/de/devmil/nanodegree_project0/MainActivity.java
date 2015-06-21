@@ -33,8 +33,8 @@ public class MainActivity extends Activity {
 
 
         configureButton(btnStreamer, new ComponentName("de.devmil.nanodegree_spotifystreamer", "de.devmil.nanodegree_spotifystreamer.MainActivity"));
-        configureButton(btnScores, R.string.toast_launch_scores);
-        configureButton(btnLibrary, R.string.toast_launch_library);
+        configureButton(btnScores, new ComponentName("barqsoft.footballscores", "barqsoft.footballscores.MainActivity"));
+        configureButton(btnLibrary, new ComponentName("it.jaschke.alexandria", "it.jaschke.alexandria.MainActivity"));
         configureButton(btnBuildItBigger, R.string.toast_launch_build_it_bigger);
         configureButton(btnXYZReader, R.string.toast_launch_xyz_reader);
         configureButton(btnCapstone, R.string.toast_launch_capstone);
