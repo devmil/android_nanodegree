@@ -2,3 +2,6 @@
 	path = Project3_SuperDuo
 	url = https://github.com/devmil/android_nanodegree_super_duo.git
 	branch = master
+[submodule "Project4_BuildItBigger"]
+	path = Project4_BuildItBigger
+	url = https://github.com/devmil/android_nanodegree_build_it_bigger.git
