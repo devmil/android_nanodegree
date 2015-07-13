@@ -12,3 +12,4 @@ If you are interested in the Android Nanodegree course then please have a look [
 1. [Project "0"](Project0/README.md)
 2. [Spotify Streamer](Project1_SpotifyStreamer/README.md)
 3. [Super Duo](https://github.com/devmil/android_nanodegree_super_duo/blob/master/README.md)
+4. [Build it bigger](https://github.com/devmil/android_nanodegree_build_it_bigger/blob/master/README.md)
