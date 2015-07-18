@@ -5,3 +5,6 @@
 [submodule "Project4_BuildItBigger"]
 	path = Project4_BuildItBigger
 	url = https://github.com/devmil/android_nanodegree_build_it_bigger.git
+[submodule "Project5_MakeYourAppMaterial"]
+	path = Project5_MakeYourAppMaterial
+	url = https://devmil@github.com/devmil/android_nanodegree_make_your_app_material.git
