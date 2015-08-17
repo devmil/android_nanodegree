@@ -8,3 +8,6 @@
 [submodule "Project5_MakeYourAppMaterial"]
 	path = Project5_MakeYourAppMaterial
 	url = https://devmil@github.com/devmil/android_nanodegree_make_your_app_material.git
+[submodule "Project6_GoUbiquitous"]
+	path = Project6_GoUbiquitous
+	url = https://github.com/devmil/android_nanodegree_go_ubiquitous.git
