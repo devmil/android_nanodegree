@@ -8,6 +8,7 @@
     <string name="activity_main_library_app">Library App</string>
     <string name="activity_main_build_it_bigger">Build It Bigger</string>
     <string name="activity_main_xyz_reader">XYZ Reader</string>
+    <string name="activity_main_sunshine">Sunshine (Go Ubiquitous)</string>
     <string name="activity_main_my_own_app">Capstone: My Own App</string>
 
     <string name="toast_launch_spotify_streamer">This button will launch the spotify streamer app!</string>

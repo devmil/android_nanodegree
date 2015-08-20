@@ -55,6 +55,13 @@
                 android:layout_margin="@dimen/activity_main_button_margins"
                 android:text="@string/activity_main_xyz_reader"/>
             <Button
+                style="@style/AppButton"
+                android:id="@+id/activity_main_btn_sunshine"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="@dimen/activity_main_button_margins"
+                android:text="@string/activity_main_sunshine"/>
+            <Button
                 style="@style/AppButtonFinal"
                 android:id="@+id/activity_main_btn_my_own_app"
                 android:layout_width="match_parent"

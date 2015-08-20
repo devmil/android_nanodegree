@@ -18,6 +18,7 @@ public class MainActivity extends Activity {
     private Button btnBuildItBigger;
     private Button btnXYZReader;
     private Button btnCapstone;
+    private Button btnSunshine;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,6 +31,7 @@ public class MainActivity extends Activity {
         btnBuildItBigger = (Button)findViewById(R.id.activity_main_btn_build_it_bigger);
         btnXYZReader = (Button)findViewById(R.id.activity_main_btn_xyz_reader);
         btnCapstone = (Button)findViewById(R.id.activity_main_btn_my_own_app);
+        btnSunshine = (Button)findViewById(R.id.activity_main_btn_sunshine);
 
 
         configureButton(btnStreamer, new ComponentName("de.devmil.nanodegree_spotifystreamer", "de.devmil.nanodegree_spotifystreamer.MainActivity"));
@@ -37,6 +39,7 @@ public class MainActivity extends Activity {
         configureButton(btnLibrary, new ComponentName("it.jaschke.alexandria", "it.jaschke.alexandria.MainActivity"));
         configureButton(btnBuildItBigger, new ComponentName("com.udacity.gradle.builditbigger.free", "com.udacity.gradle.builditbigger.MainActivity"));
         configureButton(btnXYZReader, new ComponentName("com.example.xyzreader", "com.example.xyzreader.ui.ArticleListActivity"));
+        configureButton(btnSunshine, new ComponentName("com.example.android.sunshine.app", "com.example.android.sunshine.app.MainActivity"));
         configureButton(btnCapstone, R.string.toast_launch_capstone);
     }
 
